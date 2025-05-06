@@ -66,8 +66,10 @@ class QuestionController extends Controller
         // Slice the data to get the items for the current page
         $pagedData = array_slice($data, $offset, $perPage);
 
-        // Calculate total number of pages
+        // count data in array to get total question
         $totalItems = count($data);
+
+        // total question / questionPerPage to get total pages
         $totalPages = ceil($totalItems / $perPage);
 
         // Return the paginated response
@@ -124,8 +126,42 @@ class QuestionController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Question $question)
+    public function destroy(Request $request, $id)
     {
-        //
+        // get json data
+        $json = Storage::disk('local')->get('questions.json');
+
+        // convert json data to php array
+        $data = json_decode($json, true);
+
+        // check question id exist or not
+        $question = collect($data)->firstwhere('id', $id);
+        if(!$question){
+            return response()->json([
+                'message' => 'Question not found!',
+            ], 404);
+        }
+
+        // filter all questions exept the question id which wanna delete
+        $filterItems = [];
+        foreach($data as $item){
+            if($item['id'] != $id){
+                $filterItems[] = $item;
+            }
+        }
+
+        // array value funnction to ensure the array is sequential
+        // array_values
+
+        // convert from php to json
+        $filteredJson = json_encode($filterItems, JSON_PRETTY_PRINT);
+
+        // Store it back to the JSON file
+        Storage::disk('local')->put('questions.json', $filteredJson);
+
+        return response()->json([
+            'message' => 'Question has been deleted successfully.',
+            $filteredJson
+        ]);
     }
 }
