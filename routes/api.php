@@ -10,7 +10,7 @@ Route::get('/user', function (Request $request) {
 
 Route::get('test', function(){
     return response()->json(
-        'hello'
+        'Testing route'
     );
 });
 
@@ -19,3 +19,6 @@ Route::get('/questions', [QuestionController::class, 'index']);
 
 // get quesition by id
 Route::get('/question/{id}', [QuestionController::class, 'getQuestionById']);
+
+// get questions pagination - set limit question per pages
+Route::get('/pagination-questions', [QuestionController::class, 'getPaginatedQuestions']);

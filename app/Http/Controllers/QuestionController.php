@@ -45,8 +45,42 @@ class QuestionController extends Controller
           }
      }
 
+    // get quesitons pagination - set limit question per page
+    public function getPaginatedQuestions(Request $request)
+    {
+        // get json data
+        $json = Storage::disk('local')->get('questions.json');
 
+        // convert json to php array
+        $data = json_decode($json, true);
 
+        // items per page
+        $perPage = 5;
+
+        // get the current page from the request (default to page 1)
+        $currentPage = $request->input('page', 1);
+
+        // Calculate the offset (starting index for the page)
+        $offset = ($currentPage - 1) * $perPage;
+
+        // Slice the data to get the items for the current page
+        $pagedData = array_slice($data, $offset, $perPage);
+
+        // Calculate total number of pages
+        $totalItems = count($data);
+        $totalPages = ceil($totalItems / $perPage);
+
+        // Return the paginated response
+        return response()->json([
+            'data' => $pagedData,
+            'meta' => [
+                'current_page' => $currentPage,
+                'total_pages' => $totalPages,
+                'total_items' => $totalItems,
+                'per_page' => $perPage,
+            ]
+        ]);
+    }
     /**
      * Show the form for creating a new resource.
      */
