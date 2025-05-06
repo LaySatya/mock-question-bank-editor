@@ -14,4 +14,8 @@ Route::get('test', function(){
     );
 });
 
+// get all questions
 Route::get('/questions', [QuestionController::class, 'index']);
+
+// get quesition by id
+Route::get('/question/{id}', [QuestionController::class, 'getQuestionById']);
