@@ -158,12 +158,7 @@ class QuestionController extends Controller
                 $question['generalfeedback'] = $request->input('generalfeedback', $question['generalfeedback']);
                 $question['timemodified'] = time();
                 $question['version'] += 1;
-                // if(isset($question['version']) && is_numeric($question['version'])){
-                //     $question['version'] += 1;
-                // }
-                // else{
-                //     $question['version'];
-                // }
+    
                 $updated = true;
                 break; // stop after update
             }
