@@ -75,8 +75,8 @@ class QuestionController extends Controller
 
         // Return the paginated response
         return response()->json([
-            'data' => $pagedData,
-            'meta' => [
+            $pagedData,
+            'pages' => [
                 'current_page' => $currentPage,
                 'total_pages' => $totalPages,
                 'total_items' => $totalItems,
@@ -85,6 +85,7 @@ class QuestionController extends Controller
         ]);
     }
 
+    // get questions by specific qtype
     public function getQuestionsByQtype(Request $request, $id){
 
         // get json data
@@ -139,9 +140,47 @@ class QuestionController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Question $question)
+    public function edit(Request $request, $id)
     {
-        //
+        // get json data
+        $json = Storage::disk('local')->get('questions.json');
+
+        // convert json to php array'
+        $questions = json_decode($json, true);
+
+        $updated = false;
+
+        foreach($questions as &$question){
+            if($question['id'] == $id){
+                // Update fields from the request
+                $question['name'] = $request->input('name', $question['name']);
+                $question['questiontext'] = $request->input('questiontext', $question['questiontext']);
+                $question['generalfeedback'] = $request->input('generalfeedback', $question['generalfeedback']);
+                $question['timemodified'] = time();
+                $question['version'] += 1;
+                // if(isset($question['version']) && is_numeric($question['version'])){
+                //     $question['version'] += 1;
+                // }
+                // else{
+                //     $question['version'];
+                // }
+                $updated = true;
+                break; // stop after update
+            }
+            else{
+                return response()->json([
+                    'message' => 'Question not found!'
+                ]);
+            }
+        }
+
+        if ($updated) {
+            // Save updated questions array back to the JSON file
+            Storage::disk('local')->put('questions.json', json_encode($questions, JSON_PRETTY_PRINT));
+            return response()->json(['message' => 'Question updated successfully']);
+        } else {
+            return response()->json(['message' => 'Question not found'], 404);
+        }
     }
 
     /**
