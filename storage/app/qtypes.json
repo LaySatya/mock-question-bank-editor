@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "name": "shortanswer"
+    },
+    {
+        "id": 2,
+        "name": "multichoice"
+    },
+    {
+        "id": 3,
+        "name": "truefalse"
+    },
+    {
+        "id": 4,
+        "name": "matching"
+    },
+    {
+        "id": 5,
+        "name": "numerical"
+    },
+    {
+        "id": 6,
+        "name": "essay"
+    }
+]

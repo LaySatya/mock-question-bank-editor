@@ -1,0 +1,472 @@
+[
+    {
+        "id": 1,
+        "name": "Capital of France",
+        "category": {
+            "id": 10,
+            "name": "Geography",
+            "contextid": 2
+        },
+        "parent": 0,
+        "questiontext": "What is the capital of France?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "The capital of France is Paris.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp001",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715080000,
+        "timemodified": 1715080100,
+        "createdby": {
+            "id": 1,
+            "fullname": "Admin"
+        },
+        "modifiedby": {
+            "id": 1,
+            "fullname": "Admin"
+        },
+        "answers": [
+            {
+                "id": 101,
+                "question": 1,
+                "answer": "Paris",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 102,
+                "question": 1,
+                "answer": "Lyon",
+                "fraction": 0,
+                "feedback": "Try again."
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Largest Planet",
+        "category": {
+            "id": 10,
+            "name": "Geography",
+            "contextid": 2
+        },
+        "parent": 0,
+        "questiontext": "Which is the largest planet in our solar system?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "Jupiter is the largest planet.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype_id": 2,
+        "length": 1,
+        "stamp": "stamp002",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715080200,
+        "timemodified": 1715080300,
+        "createdby": {
+            "id": 2,
+            "fullname": "Teacher Anna"
+        },
+        "modifiedby": {
+            "id": 2,
+            "fullname": "Teacher Anna"
+        },
+        "answers": [
+            {
+                "id": 201,
+                "question": 2,
+                "answer": "Jupiter",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 202,
+                "question": 2,
+                "answer": "Saturn",
+                "fraction": 0,
+                "feedback": "Close but not the largest."
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "name": "First Element",
+        "category": {
+            "id": 15,
+            "name": "Chemistry",
+            "contextid": 4
+        },
+        "parent": 0,
+        "questiontext": "What is the first element on the periodic table?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "Hydrogen is the first element.",
+        "defaultgrade": 1,
+        "penalty": 0,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp003",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715080400,
+        "timemodified": 1715080500,
+        "createdby": {
+            "id": 3,
+            "fullname": "Chem Teacher"
+        },
+        "modifiedby": {
+            "id": 3,
+            "fullname": "Chem Teacher"
+        },
+        "answers": [
+            {
+                "id": 301,
+                "question": 3,
+                "answer": "Hydrogen",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 302,
+                "question": 3,
+                "answer": "Helium",
+                "fraction": 0,
+                "feedback": "That's the second element."
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "name": "Pythagorean Theorem",
+        "category": {
+            "id": 11,
+            "name": "Mathematics",
+            "contextid": 3
+        },
+        "parent": 0,
+        "questiontext": "What is the formula for the Pythagorean Theorem?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "a² + b² = c² is the formula.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp004",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715080600,
+        "timemodified": 1715080700,
+        "createdby": {
+            "id": 4,
+            "fullname": "Math Prof"
+        },
+        "modifiedby": {
+            "id": 4,
+            "fullname": "Math Prof"
+        },
+        "answers": [
+            {
+                "id": 401,
+                "question": 4,
+                "answer": "a² + b² = c²",
+                "fraction": 1,
+                "feedback": "That's right!"
+            },
+            {
+                "id": 402,
+                "question": 4,
+                "answer": "a + b = c",
+                "fraction": 0,
+                "feedback": "That's incorrect."
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "name": "Fastest Land Animal",
+        "category": {
+            "id": 12,
+            "name": "Biology",
+            "contextid": 3
+        },
+        "parent": 0,
+        "questiontext": "What is the fastest land animal?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "The cheetah is the fastest land animal.",
+        "defaultgrade": 1,
+        "penalty": 0.2,
+        "qtype_id": 2,
+        "length": 1,
+        "stamp": "stamp005",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715080800,
+        "timemodified": 1715080900,
+        "createdby": {
+            "id": 5,
+            "fullname": "Science Teacher"
+        },
+        "modifiedby": {
+            "id": 5,
+            "fullname": "Science Teacher"
+        },
+        "answers": [
+            {
+                "id": 501,
+                "question": 5,
+                "answer": "Cheetah",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 502,
+                "question": 5,
+                "answer": "Leopard",
+                "fraction": 0,
+                "feedback": "Leopard is fast, but not the fastest."
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "name": "Author of Hamlet",
+        "category": {
+            "id": 13,
+            "name": "Literature",
+            "contextid": 5
+        },
+        "parent": 0,
+        "questiontext": "Who wrote the play Hamlet?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "William Shakespeare wrote Hamlet.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp006",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715081000,
+        "timemodified": 1715081100,
+        "createdby": {
+            "id": 6,
+            "fullname": "Literature Expert"
+        },
+        "modifiedby": {
+            "id": 6,
+            "fullname": "Literature Expert"
+        },
+        "answers": [
+            {
+                "id": 601,
+                "question": 6,
+                "answer": "William Shakespeare",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 602,
+                "question": 6,
+                "answer": "Charles Dickens",
+                "fraction": 0,
+                "feedback": "Nope, that's a different author."
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "name": "Water Boiling Point",
+        "category": {
+            "id": 12,
+            "name": "Biology",
+            "contextid": 3
+        },
+        "parent": 0,
+        "questiontext": "At what temperature does water boil at sea level?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "Water boils at 100°C (212°F) at sea level.",
+        "defaultgrade": 1,
+        "penalty": 0,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp007",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715081200,
+        "timemodified": 1715081300,
+        "createdby": {
+            "id": 5,
+            "fullname": "Science Teacher"
+        },
+        "modifiedby": {
+            "id": 5,
+            "fullname": "Science Teacher"
+        },
+        "answers": [
+            {
+                "id": 701,
+                "question": 7,
+                "answer": "100°C",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 702,
+                "question": 7,
+                "answer": "90°C",
+                "fraction": 0,
+                "feedback": "Close, but incorrect."
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "name": "Binary of 2",
+        "category": {
+            "id": 14,
+            "name": "Computer Science",
+            "contextid": 6
+        },
+        "parent": 0,
+        "questiontext": "What is the binary representation of the number 2?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "The binary of 2 is 10.",
+        "defaultgrade": 1,
+        "penalty": 0,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp008",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715081400,
+        "timemodified": 1715081500,
+        "createdby": {
+            "id": 7,
+            "fullname": "CS Instructor"
+        },
+        "modifiedby": {
+            "id": 7,
+            "fullname": "CS Instructor"
+        },
+        "answers": [
+            {
+                "id": 801,
+                "question": 8,
+                "answer": "10",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 802,
+                "question": 8,
+                "answer": "11",
+                "fraction": 0,
+                "feedback": "That's binary for 3."
+            }
+        ]
+    },
+    {
+        "id": 9,
+        "name": "Sun Center Model",
+        "category": {
+            "id": 10,
+            "name": "Geography",
+            "contextid": 2
+        },
+        "parent": 0,
+        "questiontext": "What is the name of the model that places the Sun at the center of the universe?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "The heliocentric model places the Sun at the center.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype_id": 2,
+        "length": 1,
+        "stamp": "stamp009",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715081600,
+        "timemodified": 1715081700,
+        "createdby": {
+            "id": 6,
+            "fullname": "Teacher Anna"
+        },
+        "modifiedby": {
+            "id": 6,
+            "fullname": "Teacher Anna"
+        },
+        "answers": [
+            {
+                "id": 901,
+                "question": 9,
+                "answer": "Heliocentric model",
+                "fraction": 1,
+                "feedback": "That's right!"
+            },
+            {
+                "id": 902,
+                "question": 9,
+                "answer": "Geocentric model",
+                "fraction": 0,
+                "feedback": "That's the Earth-centered model."
+            }
+        ]
+    },
+    {
+        "id": 10,
+        "name": "Main Language in Brazil",
+        "category": {
+            "id": 16,
+            "name": "Languages",
+            "contextid": 7
+        },
+        "parent": 0,
+        "questiontext": "What is the official language spoken in Brazil?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "Portuguese is the official language of Brazil.",
+        "defaultgrade": 1,
+        "penalty": 0,
+        "qtype_id": 1,
+        "length": 1,
+        "stamp": "stamp010",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1715081800,
+        "timemodified": 1715081900,
+        "createdby": {
+            "id": 8,
+            "fullname": "Language Expert"
+        },
+        "modifiedby": {
+            "id": 8,
+            "fullname": "Language Expert"
+        },
+        "answers": [
+            {
+                "id": 1001,
+                "question": 10,
+                "answer": "Portuguese",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 1002,
+                "question": 10,
+                "answer": "Spanish",
+                "fraction": 0,
+                "feedback": "No, that's spoken in many other Latin American countries."
+            }
+        ]
+    }
+]
