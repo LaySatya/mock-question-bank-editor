@@ -16,11 +16,12 @@ class QuestionController extends Controller
      public function index()
      {
         // get json data
-        $json = Storage::disk('local')->get('questions.json');
+        $questionJson = Storage::disk('local')->get('questions.json');
 
         // convert json to php array
-        $questions = json_decode($json, true);
-         return response()->json($questions);
+        $questions = json_decode($questionJson, true);
+
+        return response()->json($questions);
      }
 
      public function getQuestionById(Request $request, $id){
@@ -82,6 +83,34 @@ class QuestionController extends Controller
                 'per_page' => $perPage,
             ]
         ]);
+    }
+
+    public function getQuestionsByQtype(Request $request, $id){
+
+        // get json data
+        $json = Storage::disk('local')->get('questions.json');
+
+        // convert json to php array
+        $questions = json_decode($json, true);
+
+        $questionsQtype = [];
+
+        // loop and find all qtype which equel id
+        foreach($questions as $question){
+            if(isset($question['qtype_id']) && $question['qtype_id'] == $id){
+                $questionsQtype[] = $question;
+            }
+        }
+
+        // check qtype exist or not
+        if(!empty($questionsQtype)){
+            return response()->json($questionsQtype, 200);
+        }
+        else{
+            return response()->json([
+                'message' => 'No questions found for this qtype!'
+            ], 401);
+        }
     }
     /**
      * Show the form for creating a new resource.
@@ -150,7 +179,7 @@ class QuestionController extends Controller
             }
         }
 
-        // array value funnction to ensure the array is sequential
+        // array value funnction to ensure the array is sequential - [learn more about this]
         // array_values
 
         // convert from php to json

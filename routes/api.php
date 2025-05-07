@@ -23,6 +23,9 @@ Route::get('/question/{id}', [QuestionController::class, 'getQuestionById']);
 // get questions pagination - set limit question per pages
 Route::get('/pagination-questions', [QuestionController::class, 'getPaginatedQuestions']);
 
+// filter question by categories - qtypes
+Route::get('/questions/qtype/{id}', [QuestionController::class, 'getQuestionsByQtype']);
 
 // delete question
 Route::delete('/questions/{id}', [QuestionController::class, 'destroy']);
+
