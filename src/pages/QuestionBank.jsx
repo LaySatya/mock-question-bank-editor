@@ -1,347 +1,417 @@
-import { useState, useMemo } from 'react';
-import { 
-  Search, Filter, ChevronDown, Book, 
-  Edit, Trash, Copy, Download, 
-  Settings, BarChart2, Upload 
-} from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Search, Filter, ChevronDown, 
+  Edit, Trash, Copy, Eye, 
+  MessageCircle, Clock, CheckCircle, AlertCircle, 
+  BarChart2, FileText, Info, Layers, X,
+  PlusCircle
+} from 'lucide-react';
 
 const QuestionBank = () => {
-  
-  // Mock data for questions
+  const navigate = useNavigate();
+
+  // Comprehensive mock data for questions
   const mockQuestions = [
     {
       id: 1,
-      questiontext: "What is the capital of France?",
-      category: "Geography",
+      questiontext: "What is the primary concept of Object-Oriented Programming?",
+      category: "Computer Science",
       type: "Multiple Choice",
-      difficulty: "Easy",
-      tags: ["Europe", "Capitals"],
-      updated: "2025-04-28"
+      difficulty: "Medium",
+      status: "draft",
+      tags: ["OOP", "Programming Concepts"],
+      updated: "2025-04-28",
+      options: [
+        "Inheritance",
+        "Encapsulation",
+        "Polymorphism",
+        "All of the above"
+      ],
+      correctAnswer: "All of the above",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-28", 
+          author: "Prof. Smith", 
+          changes: "Initial creation" 
+        },
+        { 
+          id: 2, 
+          date: "2025-05-01", 
+          author: "Dr. Johnson", 
+          changes: "Added more detailed explanation" 
+        }
+      ],
+      comments: [
+        { 
+          id: 1, 
+          author: "Dr. Brown", 
+          text: "Need to clarify the definition", 
+          date: "2025-05-02" 
+        }
+      ],
+      usage: {
+        quizCount: 3,
+        lastUsed: "2025-04-15",
+        facilityIndex: 0.65,
+        discriminativeEfficiency: 0.42
+      },
+      needsChecking: false
     },
     {
       id: 2,
-      questiontext: "Water boils at 100 degrees Celsius at sea level.",
-      category: "Science",
-      type: "True/False",
-      difficulty: "Easy",
-      tags: ["Physics", "Matter"],
-      updated: "2025-04-29"
+      questiontext: "What is a closure in JavaScript?",
+      category: "Web Development",
+      type: "Short Answer",
+      difficulty: "Hard",
+      status: "ready",
+      tags: ["JavaScript", "Advanced Concepts"],
+      updated: "2025-05-01",
+      correctAnswer: "A closure is a function that has access to variables in its outer (enclosing) lexical scope, even after the outer function has returned.",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-05-01", 
+          author: "Dr. Williams", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 1,
+        lastUsed: "2025-05-10",
+        facilityIndex: 0.55,
+        discriminativeEfficiency: 0.38
+      },
+      needsChecking: true
     },
     {
       id: 3,
-      questiontext: "Explain the process of photosynthesis.",
-      category: "Science",
-      type: "Essay",
-      difficulty: "Medium",
-      tags: ["Biology", "Plants"],
-      updated: "2025-04-30"
+      questiontext: "Which data structure would be most efficient for implementing a priority queue?",
+      category: "Computer Science",
+      type: "Multiple Choice",
+      difficulty: "Hard",
+      status: "ready",
+      tags: ["Data Structures", "Algorithms"],
+      updated: "2025-04-30",
+      options: [
+        "Array",
+        "Linked List",
+        "Binary Heap",
+        "Hash Table"
+      ],
+      correctAnswer: "Binary Heap",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-30", 
+          author: "Prof. Johnson", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [
+        { 
+          id: 1, 
+          author: "Dr. Chen", 
+          text: "Should we mention Fibonacci heaps as well?", 
+          date: "2025-05-01" 
+        }
+      ],
+      usage: {
+        quizCount: 2,
+        lastUsed: "2025-05-05",
+        facilityIndex: 0.48,
+        discriminativeEfficiency: 0.65
+      },
+      needsChecking: false
     },
     {
       id: 4,
-      questiontext: "Solve for x: 3x + 7 = 22",
-      category: "Mathematics",
+      questiontext: "What is the correct SQL statement to select all records from a table named 'Students' where the 'Age' is greater than 18?",
+      category: "Database Systems",
       type: "Short Answer",
-      difficulty: "Medium",
-      tags: ["Algebra", "Equations"],
-      updated: "2025-05-01"
+      difficulty: "Easy",
+      status: "ready",
+      tags: ["SQL", "Database Queries"],
+      updated: "2025-04-20",
+      correctAnswer: "SELECT * FROM Students WHERE Age > 18;",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-20", 
+          author: "Prof. Garcia", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 5,
+        lastUsed: "2025-05-08",
+        facilityIndex: 0.82,
+        discriminativeEfficiency: 0.35
+      },
+      needsChecking: false
     },
     {
       id: 5,
-      questiontext: "HTML stands for ___________.",
-      category: "Computer Science",
-      type: "Fill in the Blank",
-      difficulty: "Easy",
-      tags: ["Web Development", "Programming"],
-      updated: "2025-05-02"
+      questiontext: "What is the principle of Occam's Razor?",
+      category: "Philosophy",
+      type: "Multiple Choice",
+      difficulty: "Medium",
+      status: "draft",
+      tags: ["Philosophy", "Critical Thinking"],
+      updated: "2025-05-02",
+      options: [
+        "The simplest explanation is usually the correct one",
+        "Knowledge comes from sensory experience",
+        "Truth is subjective and varies by perspective",
+        "Reality is an illusion created by our perceptions"
+      ],
+      correctAnswer: "The simplest explanation is usually the correct one",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-05-02", 
+          author: "Dr. Phillips", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [
+        { 
+          id: 1, 
+          author: "Prof. Lee", 
+          text: "This is a simplification. Consider rephrasing to 'Among competing hypotheses, the one with the fewest assumptions should be selected.'", 
+          date: "2025-05-03" 
+        }
+      ],
+      usage: {
+        quizCount: 0,
+        lastUsed: null,
+        facilityIndex: null,
+        discriminativeEfficiency: null
+      },
+      needsChecking: true
     },
     {
       id: 6,
-      questiontext: "What data structure uses LIFO principle?",
-      category: "Computer Science",
+      questiontext: "Which of the following is NOT a principle of good user interface design?",
+      category: "User Experience",
       type: "Multiple Choice",
-      difficulty: "Hard",
-      tags: ["Data Structures", "Programming"],
-      updated: "2025-05-03"
+      difficulty: "Medium",
+      status: "ready",
+      tags: ["UI/UX", "Design Principles"],
+      updated: "2025-04-25",
+      options: [
+        "Consistency",
+        "Visibility of system status",
+        "Error prevention",
+        "Maximizing the user's memory load"
+      ],
+      correctAnswer: "Maximizing the user's memory load",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-25", 
+          author: "Prof. Martinez", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 2,
+        lastUsed: "2025-05-01",
+        facilityIndex: 0.70,
+        discriminativeEfficiency: 0.55
+      },
+      needsChecking: false
     },
     {
       id: 7,
-      questiontext: "What are the primary colors of light?",
-      category: "Science",
-      type: "Multiple Choice",
+      questiontext: "What is the chemical formula for photosynthesis?",
+      category: "Biology",
+      type: "Short Answer",
       difficulty: "Medium",
-      tags: ["Physics", "Light"],
-      updated: "2025-05-04"
+      status: "ready",
+      tags: ["Photosynthesis", "Chemical Reactions"],
+      updated: "2025-04-15",
+      correctAnswer: "6CO2 + 6H2O + light energy → C6H12O6 + 6O2",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-15", 
+          author: "Dr. Nguyen", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 4,
+        lastUsed: "2025-05-07",
+        facilityIndex: 0.68,
+        discriminativeEfficiency: 0.45
+      },
+      needsChecking: false
     },
     {
       id: 8,
-      questiontext: "Who wrote \"Romeo and Juliet\"?",
-      category: "Language Arts",
-      type: "Short Answer",
+      questiontext: "True or False: In JavaScript, '==' compares values without checking types, while '===' compares both values and types.",
+      category: "Web Development",
+      type: "True/False",
       difficulty: "Easy",
-      tags: ["Literature", "Drama"],
-      updated: "2025-05-05"
+      status: "ready",
+      tags: ["JavaScript", "Operators"],
+      updated: "2025-04-10",
+      correctAnswer: "True",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-10", 
+          author: "Prof. Davis", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 6,
+        lastUsed: "2025-05-06",
+        facilityIndex: 0.85,
+        discriminativeEfficiency: 0.30
+      },
+      needsChecking: false
     },
     {
       id: 9,
-      questiontext: "Explain the water cycle in detail.",
-      category: "Science",
+      questiontext: "Explain the concept of marginal utility in economics.",
+      category: "Economics",
       type: "Essay",
-      difficulty: "Medium",
-      tags: ["Earth Science", "Meteorology"],
-      updated: "2025-05-06"
+      difficulty: "Hard",
+      status: "draft",
+      tags: ["Microeconomics", "Utility Theory"],
+      updated: "2025-05-04",
+      correctAnswer: "Marginal utility refers to the additional satisfaction or benefit (utility) a consumer derives from consuming one more unit of a good or service. It typically diminishes with increased consumption, which explains the law of diminishing marginal utility - as more of a good is consumed, the additional satisfaction derived from each additional unit decreases.",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-05-04", 
+          author: "Prof. Williams", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [
+        { 
+          id: 1, 
+          author: "Dr. Thompson", 
+          text: "Should require examples in the answer.", 
+          date: "2025-05-05" 
+        }
+      ],
+      usage: {
+        quizCount: 0,
+        lastUsed: null,
+        facilityIndex: null,
+        discriminativeEfficiency: null
+      },
+      needsChecking: true
     },
     {
       id: 10,
-      questiontext: "What is the chemical symbol for water?",
-      category: "Science",
-      type: "Short Answer",
+      questiontext: "Fill in the blank: The _____ is the part of the computer that executes instructions.",
+      category: "Computer Hardware",
+      type: "Fill in the Blank",
       difficulty: "Easy",
-      tags: ["Chemistry", "Basics"],
-      updated: "2025-05-07"
+      status: "ready",
+      tags: ["Computer Architecture", "Hardware Components"],
+      updated: "2025-04-05",
+      correctAnswer: "CPU (Central Processing Unit)",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-05", 
+          author: "Dr. Rogers", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 7,
+        lastUsed: "2025-05-03",
+        facilityIndex: 0.92,
+        discriminativeEfficiency: 0.25
+      },
+      needsChecking: false
     },
     {
       id: 11,
-      questiontext: "Who developed the theory of relativity?",
-      category: "Science",
-      type: "Short Answer",
-      difficulty: "Medium",
-      tags: ["Physics", "Scientists"],
-      updated: "2025-05-08"
-    },
-    {
-      id: 12,
-      questiontext: "What is the largest planet in our solar system?",
-      category: "Science",
-      type: "Multiple Choice",
+      questiontext: "Fill in the blank: The _____ is the part of the computer that executes instructions.",
+      category: "Computer Hardware",
+      type: "Fill in the Blank",
       difficulty: "Easy",
-      tags: ["Astronomy", "Planets"],
-      updated: "2025-05-09"
-    },
-    {
-      id: 13,
-      questiontext: "What is the square root of 144?",
-      category: "Mathematics",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Algebra", "Basics"],
-      updated: "2025-05-10"
-    },
-    {
-      id: 14,
-      questiontext: "What is the process by which plants make their food?",
-      category: "Science",
-      type: "Essay",
-      difficulty: "Medium",
-      tags: ["Biology", "Photosynthesis"],
-      updated: "2025-05-11"
-    },
-    {
-      id: 15,
-      questiontext: "What is the capital of Japan?",
-      category: "Geography",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Asia", "Capitals"],
-      updated: "2025-05-12"
-    },
-    {
-      id: 16,
-      questiontext: "What is the primary language spoken in Brazil?",
-      category: "Geography",
-      type: "Short Answer",
-      difficulty: "Medium",
-      tags: ["Languages", "South America"],
-      updated: "2025-05-13"
-    },
-    {
-      id: 17,
-      questiontext: "What is the value of Pi up to two decimal places?",
-      category: "Mathematics",
-      type: "Short Answer",
-      difficulty: "Medium",
-      tags: ["Geometry", "Constants"],
-      updated: "2025-05-14"
-    },
-    {
-      id: 18,
-      questiontext: "Who painted the Mona Lisa?",
-      category: "Art",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Renaissance", "Artists"],
-      updated: "2025-05-15"
-    },
-    {
-      id: 19,
-      questiontext: "What is the powerhouse of the cell?",
-      category: "Science",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Biology", "Cells"],
-      updated: "2025-05-16"
-    },
-    {
-      id: 20,
-      questiontext: "What is the freezing point of water in Celsius?",
-      category: "Science",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Physics", "Basics"],
-      updated: "2025-05-17"
-    },
-    {
-      id: 21,
-      questiontext: "What is the capital of Australia?",
-      category: "Geography",
-      type: "Short Answer",
-      difficulty: "Medium",
-      tags: ["Capitals", "Oceania"],
-      updated: "2025-05-18"
-    },
-    {
-      id: 22,
-      questiontext: "What is the smallest prime number?",
-      category: "Mathematics",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Numbers", "Basics"],
-      updated: "2025-05-19"
-    },
-    {
-      id: 23,
-      questiontext: "What is the main ingredient in guacamole?",
-      category: "Food",
-      type: "Short Answer",
-      difficulty: "Easy",
-      tags: ["Cooking", "Ingredients"],
-      updated: "2025-05-20"
-    },
-    {
-      id: 24,
-      questiontext: "What is the name of the longest river in the world?",
-      category: "Geography",
-      type: "Short Answer",
-      difficulty: "Medium",
-      tags: ["Rivers", "World"],
-      updated: "2025-05-21"
-    },
-    {
-      id: 25,
-      questiontext: "What is the speed of light in a vacuum (in m/s)?",
-      category: "Science",
-      type: "Short Answer",
-      difficulty: "Hard",
-      tags: ["Physics", "Constants"],
-      updated: "2025-05-22"
+      status: "ready",
+      tags: ["Computer Architecture", "Hardware Components"],
+      updated: "2025-04-05",
+      correctAnswer: "CPU (Central Processing Unit)",
+      versions: [
+        { 
+          id: 1, 
+          date: "2025-04-05", 
+          author: "Dr. Rogers", 
+          changes: "Initial creation" 
+        }
+      ],
+      comments: [],
+      usage: {
+        quizCount: 7,
+        lastUsed: "2025-05-03",
+        facilityIndex: 0.92,
+        discriminativeEfficiency: 0.25
+      },
+      needsChecking: false
     }
   ];
- 
-  // Mock data for courses
+
+  // Mock courses
   const mockCourses = [
-    { id: 1, name: "Mathematics 101" },
-    { id: 2, name: "Introduction to Biology" },
-    { id: 3, name: "World Geography" },
-    { id: 4, name: "Chemistry Fundamentals" }
+    { 
+      id: 1, 
+      name: "Object-Oriented Programming", 
+      department: "Computer Science",
+      semester: "Fall 2025"
+    },
+    { 
+      id: 2, 
+      name: "Advanced Web Development", 
+      department: "Web Technologies",
+      semester: "Spring 2025"
+    }
   ];
- 
-  // State
-  const navigate = useNavigate();
-  const [questions] = useState(mockQuestions);
+
+  // State Management
+  const [questions, setQuestions] = useState(mockQuestions);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [difficultyFilter, setDifficultyFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All');
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [questionToDelete, setQuestionToDelete] = useState(null);
+  const [filters, setFilters] = useState({
+    category: 'All',
+    difficulty: 'All',
+    type: 'All',
+    status: 'All'
+  });
+  const [previewQuestion, setPreviewQuestion] = useState(null);
+  const [versionHistory, setVersionHistory] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const questionsPerPage = 10;
 
-  //use for edit 
-  const handleEdit = () => {
-    if (selectedQuestions.length === 0) return;
-    navigate('/question-bank/editor', { state: { questionIds: selectedQuestions } });
-  };
-  
-  // Extract unique categories for filter dropdown
-  const categories = useMemo(() => {
-    const uniqueCategories = Array.from(new Set(questions.map(q => q.category)));
-    return ['All', ...uniqueCategories];
-  }, [questions]);
-
-  // Extract unique types for filter dropdown
-  const types = useMemo(() => {
-    const uniqueTypes = Array.from(new Set(questions.map(q => q.type)));
-    return ['All', ...uniqueTypes];
-  }, [questions]);
-
-  // Extract unique difficulties for filter dropdown
-  const difficulties = useMemo(() => {
-    const uniqueDifficulties = Array.from(new Set(questions.map(q => q.difficulty)));
-    return ['All', ...uniqueDifficulties];
-  }, [questions]);
-
-  // Filtered questions
-  const filteredQuestions = useMemo(() => {
-    return questions.filter(q => {
-      // Search filter
-      const matchesSearch = searchQuery === '' || 
-        q.questiontext.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Category filter  
-      const matchesCategory = categoryFilter === 'All' || 
-        q.category === categoryFilter;
-      
-      // Difficulty filter
-      const matchesDifficulty = difficultyFilter === 'All' || 
-        q.difficulty === difficultyFilter;
-      
-      // Type filter
-      const matchesType = typeFilter === 'All' || 
-        q.type === typeFilter;
-      
-      return matchesSearch && matchesCategory && matchesDifficulty && matchesType;
+  // Handler for Add Question button
+  const handleAddQuestion = () => {
+    navigate('/question-bank/editor', { 
+      state: { 
+        mode: 'create',
+        courseContext: null // You can add course context if needed
+      } 
     });
-  }, [questions, searchQuery, categoryFilter, difficultyFilter, typeFilter]);
-// Pagination state
-const [currentPage, setCurrentPage] = useState(1);
-const questionsPerPage = 10; // Limit the number of questions per page
-
-// Calculate total pages
-const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
-
-// Paginated questions
-const paginatedQuestions = useMemo(() => {
-  const startIndex = (currentPage - 1) * questionsPerPage;
-  const endIndex = startIndex + questionsPerPage;
-  return filteredQuestions.slice(startIndex, endIndex);
-}, [filteredQuestions, currentPage, questionsPerPage]);
-
-// Handle next page
-const handleNextPage = () => {
-  if (currentPage < totalPages) {
-    setCurrentPage((prev) => prev + 1);
-  }
-};
-
-// Handle previous page
-const handlePrevPage = () => {
-  if (currentPage > 1) {
-    setCurrentPage((prev) => prev - 1);
-  }
-};
-
-
-  // Toggle question selection
-  const toggleQuestionSelection = (id) => {
-    setSelectedQuestions(prev => 
-      prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]
-    );
   };
 
-  // Select all filtered questions
+  // Select all questions
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedQuestions(filteredQuestions.map(q => q.id));
@@ -350,40 +420,210 @@ const handlePrevPage = () => {
     }
   };
 
-  // Reset filters
-  const resetFilters = () => {
-    setSearchQuery('');
-    setCategoryFilter('All');
-    setDifficultyFilter('All');
-    setTypeFilter('All');
+  // Toggle individual question selection
+  const toggleQuestionSelection = (id) => {
+    setSelectedQuestions(prev => 
+      prev.includes(id) 
+        ? prev.filter(qId => qId !== id) 
+        : [...prev, id]
+    );
   };
 
-  // Handle delete confirmation
-  const confirmDelete = (id) => {
-    setQuestionToDelete(id);
-    setShowDeleteConfirm(true);
+  // Bulk actions
+  const handleBulkEdit = () => {
+    if (selectedQuestions.length > 0) {
+      navigate('/question-bank/editor', { 
+        state: { 
+          questionIds: selectedQuestions,
+          courseContext: null // You can add course context if needed
+        } 
+      });
+    }
   };
 
-  // Handle actual deletion (mock implementation)
-  const handleDelete = () => {
-    // In a real app, you'd update the state to remove the question
-    alert(`Question ${questionToDelete} would be deleted`);
-    setShowDeleteConfirm(false);
-    setQuestionToDelete(null);
+  const handleBulkDelete = () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedQuestions.length} questions?`)) {
+      setQuestions(prev => 
+        prev.filter(q => !selectedQuestions.includes(q.id))
+      );
+      setSelectedQuestions([]);
+    }
   };
 
-  // Handle assign to course (mock implementation)
-  const handleAssignToCourse = () => {
-    if (selectedQuestions.length === 0 || !selectedCourse) return;
-    
-    alert(`Successfully assigned ${selectedQuestions.length} questions to course ${selectedCourse}`);
+  const handleBulkDuplicate = () => {
+    const duplicatedQuestions = selectedQuestions.map(id => {
+      const originalQuestion = questions.find(q => q.id === id);
+      return {
+        ...originalQuestion,
+        id: Date.now() + Math.random(),
+        questiontext: `Copy of: ${originalQuestion.questiontext}`,
+        status: 'draft',
+        versions: [
+          ...(originalQuestion.versions || []),
+          { 
+            id: Date.now(), 
+            date: new Date().toISOString().split('T')[0], 
+            author: 'Current User', 
+            changes: 'Duplicated question' 
+          }
+        ]
+      };
+    });
+
+    setQuestions(prev => [...prev, ...duplicatedQuestions]);
     setSelectedQuestions([]);
-    setSelectedCourse('');
   };
 
-  
+  // Filtering and Pagination
+  const filteredQuestions = useMemo(() => {
+    return questions.filter(q => {
+      const matchesSearch = searchQuery === '' || 
+        q.questiontext.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = filters.category === 'All' || 
+        q.category === filters.category;
+      
+      const matchesDifficulty = filters.difficulty === 'All' || 
+        q.difficulty === filters.difficulty;
+      
+      const matchesType = filters.type === 'All' || 
+        q.type === filters.type;
+      
+      const matchesStatus = filters.status === 'All' || 
+        q.status === filters.status;
+      
+      return matchesSearch && 
+             matchesCategory && 
+             matchesDifficulty && 
+             matchesType && 
+             matchesStatus;
+    });
+  }, [questions, searchQuery, filters]);
 
-  // Get color for type badge
+  // Paginated Questions
+  const paginatedQuestions = useMemo(() => {
+    const startIndex = (currentPage - 1) * questionsPerPage;
+    const endIndex = startIndex + questionsPerPage;
+    return filteredQuestions.slice(startIndex, endIndex);
+  }, [filteredQuestions, currentPage]);
+
+  // Pagination Handlers
+  const handleNextPage = () => {
+    const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  // Helper Components
+  const VersionHistoryModal = ({ question, onClose }) => {
+    if (!question) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Version History</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {question.versions.map((version, index) => (
+              <div 
+                key={version.id} 
+                className="border-b pb-4 last:border-b-0"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-semibold">Version {index + 1}</span>
+                  <span className="text-sm text-gray-500">{version.date}</span>
+                </div>
+                <div className="text-sm">
+                  <p><strong>Author:</strong> {version.author}</p>
+                  <p><strong>Changes:</strong> {version.changes}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const QuestionPreviewModal = ({ question, onClose }) => {
+    if (!question) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Question Preview</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <strong className="block mb-2">Question Text:</strong>
+              <p className="text-gray-700">{question.questiontext}</p>
+            </div>
+
+            {question.options && (
+              <div>
+                <strong className="block mb-2">Options:</strong>
+                <ul className="list-disc pl-5">
+                  {question.options.map((option, index) => (
+                    <li key={index} className="text-gray-700">{option}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong className="block mb-2">Type:</strong>
+                <span className={`inline-block px-2 py-1 rounded ${getTypeColor(question.type)}`}>
+                  {question.type}
+                </span>
+              </div>
+
+              <div>
+                <strong className="block mb-2">Difficulty:</strong>
+                <span className={`font-medium ${getDifficultyColor(question.difficulty)}`}>
+                  {question.difficulty}
+                </span>
+              </div>
+
+              <div>
+                <strong className="block mb-2">Status:</strong>
+                <span className={`
+                  px-2 py-1 rounded text-xs
+                  ${question.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}
+                `}>
+                  {question.status}
+                </span>
+              </div>
+
+              <div>
+                <strong className="block mb-2">Usage:</strong>
+                <p>Used in {question.usage.quizCount} quizzes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Color helpers
   const getTypeColor = (type) => {
     switch (type) {
       case 'Multiple Choice': return 'bg-blue-100 text-blue-800';
@@ -395,7 +635,6 @@ const handlePrevPage = () => {
     }
   };
 
-  // Get color for difficulty
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 'Easy': return 'text-green-600';
@@ -408,9 +647,60 @@ const handlePrevPage = () => {
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {/* Search and filter bar */}
+        {/* Header with Add Question Button */}
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-800">Question Bank</h1>
+          <button 
+            onClick={handleAddQuestion}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 shadow-sm transition-colors duration-200"
+          >
+            <PlusCircle size={18} />
+            <span>Add Question</span>
+          </button>
+        </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedQuestions.length > 0 && (
+          <div className="bg-blue-50 p-4 flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-blue-800">
+                {selectedQuestions.length} questions selected
+              </span>
+              <button 
+                onClick={handleBulkEdit}
+                className="btn btn-sm btn-outline flex items-center space-x-2"
+              >
+                <Edit size={16} />
+                <span>Edit</span>
+              </button>
+              <button 
+                onClick={handleBulkDelete}
+                className="btn btn-sm btn-outline btn-error flex items-center space-x-2"
+              >
+                <Trash size={16} />
+                <span>Delete</span>
+              </button>
+              <button 
+                onClick={handleBulkDuplicate}
+                className="btn btn-sm btn-outline flex items-center space-x-2"
+              >
+                <Copy size={16} />
+                <span>Duplicate</span>
+              </button>
+            </div>
+            <button 
+              onClick={() => setSelectedQuestions([])}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Clear Selection
+            </button>
+          </div>
+        )}
+
+        {/* Search and Filters */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search Input */}
             <div className="relative flex-grow">
               <input 
                 type="text"
@@ -423,349 +713,242 @@ const handlePrevPage = () => {
                 <Search size={18} className="text-gray-400" />
               </div>
             </div>
-            
+
+            {/* Filters */}
             <div className="flex gap-2">
-              <div className="relative">
-                <button 
-                  className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 flex items-center gap-2 hover:bg-gray-50"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter size={18} />
-                  Filters
-                  <ChevronDown size={16} />
-                </button>
-                
-                {showFilters && (
-                  <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-64">
-                    <div className="p-4">
-                      <div className="mb-4">
-                        <label className="font-medium mb-1 block">Category</label>
-                        <select 
-                          className="w-full p-2 border border-gray-300 rounded"
-                          value={categoryFilter}
-                          onChange={(e) => setCategoryFilter(e.target.value)}
-                        >
-                          {categories.map(category => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <label className="font-medium mb-1 block">Difficulty</label>
-                        <select 
-                          className="w-full p-2 border border-gray-300 rounded"
-                          value={difficultyFilter}
-                          onChange={(e) => setDifficultyFilter(e.target.value)}
-                        >
-                          {difficulties.map(difficulty => (
-                            <option key={difficulty} value={difficulty}>
-                              {difficulty}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <label className="font-medium mb-1 block">Type</label>
-                        <select 
-                          className="w-full p-2 border border-gray-300 rounded"
-                          value={typeFilter}
-                          onChange={(e) => setTypeFilter(e.target.value)}
-                        >
-                          {types.map(type => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <button 
-                className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
-                onClick={resetFilters}
+              {/* Category Filter */}
+              <select
+                className="border border-gray-300 rounded px-3 py-2"
+                value={filters.category}
+                onChange={(e) => setFilters(prev => ({...prev, category: e.target.value}))}
               >
-                Reset
-              </button>
-              
-              <div className="relative">
-                <button 
-                  className="px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
-                  onClick={() => setShowMenu(!showMenu)}
-                >
-                  <span className="font-bold">⋯</span>
-                </button>
-                
-                {showMenu && (
-                  <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
-                    <div className="py-1">
-                      <button className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2">
-                        <Download size={16} />
-                        Export Questions
-                      </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2">
-                        <Upload size={16} />
-                        Import Questions
-                      </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2">
-                        <BarChart2 size={16} />
-                        Question Analytics
-                      </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2">
-                        <Settings size={16} />
-                        Settings
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <option value="All">All Categories</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Web Development">Web Development</option>
+                {/* Add more categories */}
+              </select>
+
+              {/* Difficulty Filter */}
+              <select
+                className="border border-gray-300 rounded px-3 py-2"
+                value={filters.difficulty}
+                onChange={(e) => setFilters(prev => ({...prev, difficulty: e.target.value}))}
+              >
+                <option value="All">All Difficulties</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+
+              {/* Status Filter */}
+              <select
+                className="border border-gray-300 rounded px-3 py-2"
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({...prev, status: e.target.value}))}
+              >
+                <option value="All">All Statuses</option>
+                <option value="draft">Draft</option>
+                <option value="ready">Ready</option>
+                <option value="needs_review">Needs Review</option>
+              </select>
             </div>
           </div>
         </div>
-        
-        {/* Course assignment bar */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Book size={20} className="text-blue-600" />
-            <select
-              className="border border-gray-300 rounded px-3 py-1.5 bg-white"
-              value={selectedCourse}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-            >
-              <option value="">Select a course</option>
-              {mockCourses.map(course => (
-                <option key={course.id} value={course.id}>
-                  {course.name}
-                </option>
+
+        {/* Questions Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="w-12 px-6 py-3">
+                  <input 
+                    type="checkbox"
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                    checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
+                    onChange={handleSelectAll}
+                  />
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Question
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Versions
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Usage
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedQuestions.map(question => (
+                <tr key={question.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <input 
+                      type="checkbox"
+                      className="form-checkbox h-4 w-4 text-blue-600"
+                      checked={selectedQuestions.includes(question.id)}
+                      onChange={() => toggleQuestionSelection(question.id)}
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                      {question.questiontext}
+                    </div>
+                    <div className="text-sm text-gray-500 flex flex-wrap gap-1 mt-1">
+                      {question.tags.map((tag, index) => (
+                        <span 
+                          key={index} 
+                          className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(question.type)}`}>
+                      {question.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`
+                      px-2 py-1 rounded-full text-xs font-medium
+                      ${
+                        question.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                        question.status === 'ready' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }
+                    `}>
+                      {question.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button 
+                      onClick={() => setVersionHistory(question)}
+                      className="flex items-center text-blue-600 hover:text-blue-800"
+                    >
+                      <Layers size={16} className="mr-2" />
+                      {question.versions.length} Versions
+                    </button>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center">
+                      <BarChart2 size={16} className="mr-2 text-gray-500" />
+                      {question.usage.quizCount} Quizzes
+                    </div>
+                    {question.needsChecking && (
+                      <div className="text-red-600 flex items-center mt-1">
+                        <AlertCircle size={14} className="mr-1" />
+                        Needs Review
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => setPreviewQuestion(question)}
+                        className="text-blue-600 hover:text-blue-800"
+                        aria-label="Preview question"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/question-edit/${question.id}`)}
+                        className="text-green-600 hover:text-green-800"
+                        aria-label="Edit question"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const duplicatedQuestion = {
+                            ...question,
+                            id: Date.now(),
+                            status: 'draft',
+                            versions: [
+                              ...question.versions,
+                              { 
+                                id: Date.now(), 
+                                date: new Date().toISOString().split('T')[0], 
+                                author: 'Current User', 
+                                changes: 'Duplicated question' 
+                              }
+                            ]
+                          };
+                          setQuestions(prev => [...prev, duplicatedQuestion]);
+                        }}
+                        className="text-purple-600 hover:text-purple-800"
+                        aria-label="Duplicate question"
+                      >
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </select>
-          </div>
-          
-          <button 
-            className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 disabled:bg-blue-300"
-            disabled={!selectedCourse || selectedQuestions.length === 0}
-            onClick={handleAssignToCourse}
-          >
-            Assign to Course
-          </button>
-          
-          <div className="ml-auto flex items-center">
-            <span className="text-sm mr-2">
-              With {selectedQuestions.length} selected:
-            </span>
-            <div className="flex gap-1">
-              <button 
-                className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={selectedQuestions.length === 0}
-                //onClick={() => alert('Edit functionality would open here')}
-                onClick={handleEdit}
-                >
-                  <Edit size={16} />
-                  <span className="sr-only">Edit</span>
-                </button>
-          
-
-              <button 
-                className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={selectedQuestions.length === 0}
-                onClick={() => alert('Delete functionality would open here')}
-              >
-                <Trash size={16} />
-                <span className="sr-only">Delete</span>
-              </button>
-              
-              <button 
-                className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={selectedQuestions.length === 0}
-                onClick={() => alert('Duplicate functionality would open here')}
-              >
-                <Copy size={16} />
-                <span className="sr-only">Duplicate</span>
-              </button>
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
-        
-        {/* Questions table */}
-{paginatedQuestions.length === 0 ? (
-  <div className="p-12 text-center">
-    <p className="text-gray-500">No questions found matching your criteria.</p>
-    <button 
-      className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-      onClick={resetFilters}
-    >
-      Reset filters
-    </button>
-  </div>
-) : (
-  <div className="overflow-x-auto">
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead>
-        <tr className="bg-gray-50">
-          <th className="w-12 px-6 py-3 text-left">
-            <input 
-              type="checkbox" 
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
-              onChange={handleSelectAll}
-            />
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Question
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Type
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Category
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Difficulty
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Updated
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {paginatedQuestions.map(question => (
-          <tr key={question.id} className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap">
-              <input 
-                type="checkbox" 
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                checked={selectedQuestions.includes(question.id)}
-                onChange={() => toggleQuestionSelection(question.id)}
-              />
-            </td>
-            <td className="px-6 py-4">
-              <div className="text-sm font-medium text-gray-900">{question.questiontext}</div>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {question.tags.map((tag, i) => (
-                  <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(question.type)}`}>
-                {question.type}
-              </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {question.category}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span className={`text-sm font-medium ${getDifficultyColor(question.difficulty)}`}>
-                {question.difficulty}
-              </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {question.updated}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <div className="flex items-center space-x-2">
-                <button 
-                  className="text-indigo-600 hover:text-indigo-900" 
-                  aria-label="Edit question"
-                  onClick={() => alert(`Would edit question ${question.id}`)}
-                >
-                  <Edit size={16} />
-                </button>
-                <button 
-                  className="text-red-600 hover:text-red-900" 
-                  aria-label="Delete question"
-                  onClick={() => confirmDelete(question.id)}
-                >
-                  <Trash size={16} />
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)}
+
         {/* Pagination */}
-        <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
-  {filteredQuestions.length === 0 ? (
-    <div className="flex items-center justify-between w-full">
-      <div className="text-sm text-gray-700">
-        No questions found. Try adjusting your filters or search query.
-      </div>
-      <button 
-        className="px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-        onClick={resetFilters}
-      >
-        Reset Filters
-      </button>
-    </div>
-  ) : (
-    <div className="text-sm text-gray-700">
-      Showing <span className="font-medium">{(currentPage - 1) * questionsPerPage + 1}</span> 
-      to <span className="font-medium">{Math.min(currentPage * questionsPerPage, filteredQuestions.length)}</span> 
-      of <span className="font-medium">{filteredQuestions.length}</span> questions
-    </div>
-  )}
-
-  <div className="flex items-center space-x-2">
-    <button
-      className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-500 hover:bg-gray-50"
-      onClick={handlePrevPage}
-      disabled={currentPage === 1}
-    >
-      &laquo; Prev
-    </button>
-    <span className="text-sm text-gray-700">
-      Page {currentPage} of {totalPages}
-    </span>
-    <button
-      className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-500 hover:bg-gray-50"
-      onClick={handleNextPage}
-      disabled={currentPage === totalPages}
-    >
-      Next &raquo;
-    </button>
-  </div>
-</div>
-      </div>
-      
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
-            <div className="mb-4">
-              <h3 className="text-lg font-bold">Confirm Deletion</h3>
-              <p className="mt-2">Are you sure you want to delete this question? This action cannot be undone.</p>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button 
-                className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                onClick={handleDelete}
-              >
-                Delete
-              </button>
-            </div>
+        <div className="px-6 py-3 flex justify-between items-center border-t border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-700">
+            Showing{' '}
+            <span className="font-medium">
+              {(currentPage - 1) * questionsPerPage + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-medium">
+              {Math.min(currentPage * questionsPerPage, filteredQuestions.length)}
+            </span>{' '}
+            of{' '}
+            <span className="font-medium">
+              {filteredQuestions.length}
+            </span>{' '}
+            questions
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === Math.ceil(filteredQuestions.length / questionsPerPage)}
+              className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Modals */}
+        {previewQuestion && (
+          <QuestionPreviewModal 
+            question={previewQuestion} 
+            onClose={() => setPreviewQuestion(null)} 
+          />
+        )}
+
+        {versionHistory && (
+          <VersionHistoryModal 
+            question={versionHistory} 
+            onClose={() => setVersionHistory(null)} 
+          />
+        )}
+      </div>
     </div>
   );
 };
