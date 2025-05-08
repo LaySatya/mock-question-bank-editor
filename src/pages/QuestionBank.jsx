@@ -4,8 +4,10 @@ import {
   Edit, Trash, Copy, Download, 
   Settings, BarChart2, Upload 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const QuestionBank = () => {
+  
   // Mock data for questions
   const mockQuestions = [
     {
@@ -100,6 +102,7 @@ const QuestionBank = () => {
   ];
 
   // State
+  const navigate = useNavigate();
   const [questions] = useState(mockQuestions);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,6 +115,12 @@ const QuestionBank = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState(null);
 
+  //use for edit 
+  const handleEdit = () => {
+    if (selectedQuestions.length === 0) return;
+    navigate('/question-bank/editor', { state: { questionIds: selectedQuestions } });
+  };
+  
   // Extract unique categories for filter dropdown
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(new Set(questions.map(q => q.category)));
@@ -199,6 +208,8 @@ const QuestionBank = () => {
     setSelectedQuestions([]);
     setSelectedCourse('');
   };
+
+  
 
   // Get color for type badge
   const getTypeColor = (type) => {
@@ -381,14 +392,13 @@ const QuestionBank = () => {
                 className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 disabled={selectedQuestions.length === 0}
                 //onClick={() => alert('Edit functionality would open here')}
-                onClick={() => {
-                  navigate('/question-bank/editor', { state: { questionIds: selectedQuestions } });
-                }}
-              >
-                <Edit size={16} />
-                <span className="sr-only">Edit</span>
-              </button>
-              
+                onClick={handleEdit}
+                >
+                  <Edit size={16} />
+                  <span className="sr-only">Edit</span>
+                </button>
+          
+
               <button 
                 className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 disabled={selectedQuestions.length === 0}
