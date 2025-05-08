@@ -90,9 +90,153 @@ const QuestionBank = () => {
       difficulty: "Medium",
       tags: ["Earth Science", "Meteorology"],
       updated: "2025-05-06"
+    },
+    {
+      id: 10,
+      questiontext: "What is the chemical symbol for water?",
+      category: "Science",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Chemistry", "Basics"],
+      updated: "2025-05-07"
+    },
+    {
+      id: 11,
+      questiontext: "Who developed the theory of relativity?",
+      category: "Science",
+      type: "Short Answer",
+      difficulty: "Medium",
+      tags: ["Physics", "Scientists"],
+      updated: "2025-05-08"
+    },
+    {
+      id: 12,
+      questiontext: "What is the largest planet in our solar system?",
+      category: "Science",
+      type: "Multiple Choice",
+      difficulty: "Easy",
+      tags: ["Astronomy", "Planets"],
+      updated: "2025-05-09"
+    },
+    {
+      id: 13,
+      questiontext: "What is the square root of 144?",
+      category: "Mathematics",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Algebra", "Basics"],
+      updated: "2025-05-10"
+    },
+    {
+      id: 14,
+      questiontext: "What is the process by which plants make their food?",
+      category: "Science",
+      type: "Essay",
+      difficulty: "Medium",
+      tags: ["Biology", "Photosynthesis"],
+      updated: "2025-05-11"
+    },
+    {
+      id: 15,
+      questiontext: "What is the capital of Japan?",
+      category: "Geography",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Asia", "Capitals"],
+      updated: "2025-05-12"
+    },
+    {
+      id: 16,
+      questiontext: "What is the primary language spoken in Brazil?",
+      category: "Geography",
+      type: "Short Answer",
+      difficulty: "Medium",
+      tags: ["Languages", "South America"],
+      updated: "2025-05-13"
+    },
+    {
+      id: 17,
+      questiontext: "What is the value of Pi up to two decimal places?",
+      category: "Mathematics",
+      type: "Short Answer",
+      difficulty: "Medium",
+      tags: ["Geometry", "Constants"],
+      updated: "2025-05-14"
+    },
+    {
+      id: 18,
+      questiontext: "Who painted the Mona Lisa?",
+      category: "Art",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Renaissance", "Artists"],
+      updated: "2025-05-15"
+    },
+    {
+      id: 19,
+      questiontext: "What is the powerhouse of the cell?",
+      category: "Science",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Biology", "Cells"],
+      updated: "2025-05-16"
+    },
+    {
+      id: 20,
+      questiontext: "What is the freezing point of water in Celsius?",
+      category: "Science",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Physics", "Basics"],
+      updated: "2025-05-17"
+    },
+    {
+      id: 21,
+      questiontext: "What is the capital of Australia?",
+      category: "Geography",
+      type: "Short Answer",
+      difficulty: "Medium",
+      tags: ["Capitals", "Oceania"],
+      updated: "2025-05-18"
+    },
+    {
+      id: 22,
+      questiontext: "What is the smallest prime number?",
+      category: "Mathematics",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Numbers", "Basics"],
+      updated: "2025-05-19"
+    },
+    {
+      id: 23,
+      questiontext: "What is the main ingredient in guacamole?",
+      category: "Food",
+      type: "Short Answer",
+      difficulty: "Easy",
+      tags: ["Cooking", "Ingredients"],
+      updated: "2025-05-20"
+    },
+    {
+      id: 24,
+      questiontext: "What is the name of the longest river in the world?",
+      category: "Geography",
+      type: "Short Answer",
+      difficulty: "Medium",
+      tags: ["Rivers", "World"],
+      updated: "2025-05-21"
+    },
+    {
+      id: 25,
+      questiontext: "What is the speed of light in a vacuum (in m/s)?",
+      category: "Science",
+      type: "Short Answer",
+      difficulty: "Hard",
+      tags: ["Physics", "Constants"],
+      updated: "2025-05-22"
     }
   ];
-
+ 
   // Mock data for courses
   const mockCourses = [
     { id: 1, name: "Mathematics 101" },
@@ -100,7 +244,7 @@ const QuestionBank = () => {
     { id: 3, name: "World Geography" },
     { id: 4, name: "Chemistry Fundamentals" }
   ];
-
+ 
   // State
   const navigate = useNavigate();
   const [questions] = useState(mockQuestions);
@@ -161,6 +305,34 @@ const QuestionBank = () => {
       return matchesSearch && matchesCategory && matchesDifficulty && matchesType;
     });
   }, [questions, searchQuery, categoryFilter, difficultyFilter, typeFilter]);
+// Pagination state
+const [currentPage, setCurrentPage] = useState(1);
+const questionsPerPage = 10; // Limit the number of questions per page
+
+// Calculate total pages
+const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
+
+// Paginated questions
+const paginatedQuestions = useMemo(() => {
+  const startIndex = (currentPage - 1) * questionsPerPage;
+  const endIndex = startIndex + questionsPerPage;
+  return filteredQuestions.slice(startIndex, endIndex);
+}, [filteredQuestions, currentPage, questionsPerPage]);
+
+// Handle next page
+const handleNextPage = () => {
+  if (currentPage < totalPages) {
+    setCurrentPage((prev) => prev + 1);
+  }
+};
+
+// Handle previous page
+const handlePrevPage = () => {
+  if (currentPage > 1) {
+    setCurrentPage((prev) => prev - 1);
+  }
+};
+
 
   // Toggle question selection
   const toggleQuestionSelection = (id) => {
@@ -421,128 +593,152 @@ const QuestionBank = () => {
         </div>
         
         {/* Questions table */}
-        {filteredQuestions.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-gray-500">No questions found matching your criteria.</p>
-            <button 
-              className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-              onClick={resetFilters}
-            >
-              Reset filters
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="w-12 px-6 py-3 text-left">
-                    <input 
-                      type="checkbox" 
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
-                      onChange={handleSelectAll}
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Question
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Difficulty
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Updated
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredQuestions.map(question => (
-                  <tr key={question.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input 
-                        type="checkbox" 
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={selectedQuestions.includes(question.id)}
-                        onChange={() => toggleQuestionSelection(question.id)}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{question.questiontext}</div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {question.tags.map((tag, i) => (
-                          <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(question.type)}`}>
-                        {question.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {question.category}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${getDifficultyColor(question.difficulty)}`}>
-                        {question.difficulty}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {question.updated}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className="text-indigo-600 hover:text-indigo-900" 
-                          aria-label="Edit question"
-                          onClick={() => alert(`Would edit question ${question.id}`)}
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button 
-                          className="text-red-600 hover:text-red-900" 
-                          aria-label="Delete question"
-                          onClick={() => confirmDelete(question.id)}
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+{paginatedQuestions.length === 0 ? (
+  <div className="p-12 text-center">
+    <p className="text-gray-500">No questions found matching your criteria.</p>
+    <button 
+      className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+      onClick={resetFilters}
+    >
+      Reset filters
+    </button>
+  </div>
+) : (
+  <div className="overflow-x-auto">
+    <table className="min-w-full divide-y divide-gray-200">
+      <thead>
+        <tr className="bg-gray-50">
+          <th className="w-12 px-6 py-3 text-left">
+            <input 
+              type="checkbox" 
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
+              onChange={handleSelectAll}
+            />
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Question
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Type
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Category
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Difficulty
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Updated
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {paginatedQuestions.map(question => (
+          <tr key={question.id} className="hover:bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap">
+              <input 
+                type="checkbox" 
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={selectedQuestions.includes(question.id)}
+                onChange={() => toggleQuestionSelection(question.id)}
+              />
+            </td>
+            <td className="px-6 py-4">
+              <div className="text-sm font-medium text-gray-900">{question.questiontext}</div>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {question.tags.map((tag, i) => (
+                  <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                    {tag}
+                  </span>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        
+              </div>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(question.type)}`}>
+                {question.type}
+              </span>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {question.category}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap">
+              <span className={`text-sm font-medium ${getDifficultyColor(question.difficulty)}`}>
+                {question.difficulty}
+              </span>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {question.updated}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <div className="flex items-center space-x-2">
+                <button 
+                  className="text-indigo-600 hover:text-indigo-900" 
+                  aria-label="Edit question"
+                  onClick={() => alert(`Would edit question ${question.id}`)}
+                >
+                  <Edit size={16} />
+                </button>
+                <button 
+                  className="text-red-600 hover:text-red-900" 
+                  aria-label="Delete question"
+                  onClick={() => confirmDelete(question.id)}
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
         {/* Pagination */}
         <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
-          <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">{filteredQuestions.length}</span> of <span className="font-medium">{questions.length}</span> questions
-          </div>
-          <div className="flex items-center space-x-2">
-            <button className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-500 hover:bg-gray-50">
-              &laquo; Prev
-            </button>
-            <button className="px-3 py-1 border border-gray-300 rounded bg-white text-blue-600 hover:bg-gray-50 font-medium">
-              1
-            </button>
-            <button className="px-2 py-1 border border-gray-300 rounded bg-white text-gray-500 hover:bg-gray-50">
-              Next &raquo;
-            </button>
-          </div>
-        </div>
+  {filteredQuestions.length === 0 ? (
+    <div className="flex items-center justify-between w-full">
+      <div className="text-sm text-gray-700">
+        No questions found. Try adjusting your filters or search query.
+      </div>
+      <button 
+        className="px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+        onClick={resetFilters}
+      >
+        Reset Filters
+      </button>
+    </div>
+  ) : (
+    <div className="text-sm text-gray-700">
+      Showing <span className="font-medium">{(currentPage - 1) * questionsPerPage + 1}</span> 
+      to <span className="font-medium">{Math.min(currentPage * questionsPerPage, filteredQuestions.length)}</span> 
+      of <span className="font-medium">{filteredQuestions.length}</span> questions
+    </div>
+  )}
+
+  <div className="flex items-center space-x-2">
+    <button
+      className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-500 hover:bg-gray-50"
+      onClick={handlePrevPage}
+      disabled={currentPage === 1}
+    >
+      &laquo; Prev
+    </button>
+    <span className="text-sm text-gray-700">
+      Page {currentPage} of {totalPages}
+    </span>
+    <button
+      className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-500 hover:bg-gray-50"
+      onClick={handleNextPage}
+      disabled={currentPage === totalPages}
+    >
+      Next &raquo;
+    </button>
+  </div>
+</div>
       </div>
       
       {/* Delete Confirmation Modal */}
