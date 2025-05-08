@@ -98,7 +98,7 @@ class QuestionController extends Controller
 
         // loop and find all qtype which equel id
         foreach($questions as $question){
-            if(isset($question['qtype_id']) && $question['qtype_id'] == $id){
+            if(isset($question['qtype']) && $question['qtype']['id'] == $id){
                 $questionsQtype[] = $question;
             }
         }
@@ -118,16 +118,115 @@ class QuestionController extends Controller
      */
     public function create()
     {
-        //
+
     }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        //
+{
+    // Validate incoming data
+    $validated = $request->validate([
+        'name' => 'required|string',
+        'questiontext' => 'required|string',
+        'generalfeedback' => 'nullable|string',
+        'qtype.id' => 'required|integer',
+        'category.id' => 'required|integer',
+        'answers' => 'required|array', // Ensure answers is an array
+        'answers.*.answer' => 'required|string', // Each answer must be a string
+        'answers.*.fraction' => 'required|numeric', // Each answer must have a fraction value
+        'answers.*.feedback' => 'nullable|string', // Each answer can have optional feedback
+    ]);
+
+    // Read existing questions
+    $json = Storage::disk('local')->get('questions.json');
+    $questions = json_decode($json, true);
+
+    // Generate a new ID
+    $newId = collect($questions)->max('id') + 1;
+
+    // Check if the category exists
+    $category_name = '';
+    foreach ($questions as $question) {
+        if ($question['category']['id'] == $validated['category']['id']) {
+            $category_name = $question['category']['name'];
+            break;
+        }
     }
+
+    // If category is not found, return an error
+    if (empty($category_name)) {
+        return response()->json([
+            'message' => 'Category not found!'
+        ], 404);
+    }
+
+    // Check if the qtype exists
+    $qtype_name = '';
+    foreach ($questions as $question) {
+        if ($question['qtype']['id'] == $validated['qtype']['id']) {
+            $qtype_name = $question['qtype']['name'];
+            break;
+        }
+    }
+
+    // If qtype is not found, return an error
+    if (empty($qtype_name)) {
+        return response()->json([
+            'message' => 'Qtype not found!'
+        ], 404);
+    }
+
+    // Build the new question
+    $newQuestion = [
+        'id' => $newId,
+        'name' => $validated['name'],
+        'category' => [
+            'id' => $validated['category']['id'],
+            'name' => $category_name,
+            'contextid' => 1,
+        ],
+        'parent' => 0,
+        'questiontext' => $validated['questiontext'],
+        'questiontextformat' => 1,
+        'image' => '',
+        'generalfeedback' => $validated['generalfeedback'] ?? '',
+        'defaultgrade' => 1,
+        'penalty' => 0.1,
+        'qtype'  => [
+            'id' => $validated['qtype']['id'],
+            'name' => $qtype_name,
+        ],
+        'length' => 1,
+        'stamp' => uniqid('stamp'),
+        'version' => 1,
+        'hidden' => 0,
+        'timecreated' => time(),
+        'timemodified' => time(),
+        'createdby' => [
+            'id' => 1,
+            'fullname' => "admin",
+        ],
+        'modifiedby' => [
+            'id' => 1,
+            'fullname' => "admin",
+        ],
+        'answers' => $validated['answers'] // This is where the answers array is added
+    ];
+
+    // Add to questions array
+    $questions[] = $newQuestion;
+
+    // Save back to file
+    Storage::disk('local')->put('questions.json', json_encode($questions, JSON_PRETTY_PRINT));
+
+    return response()->json([
+        'message' => 'Question created successfully',
+        'question' => $newQuestion
+    ], 201);
+}
+
 
     /**
      * Display the specified resource.
@@ -158,7 +257,7 @@ class QuestionController extends Controller
                 $question['generalfeedback'] = $request->input('generalfeedback', $question['generalfeedback']);
                 $question['timemodified'] = time();
                 $question['version'] += 1;
-    
+
                 $updated = true;
                 break; // stop after update
             }

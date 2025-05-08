@@ -26,6 +26,9 @@ Route::get('/pagination-questions', [QuestionController::class, 'getPaginatedQue
 // filter question by categories - qtypes
 Route::get('/questions/qtype/{id}', [QuestionController::class, 'getQuestionsByQtype']);
 
+// add new question
+Route::post('/questions', [QuestionController::class, 'store']);
+
 // update question
 Route::put('/questions/{id}', [QuestionController::class, 'edit']);
 

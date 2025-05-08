@@ -14,7 +14,10 @@
         "generalfeedback": "The capital of France is Paris.",
         "defaultgrade": 1,
         "penalty": 0.1,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp001",
         "version": 1,
@@ -31,14 +34,14 @@
         },
         "answers": [
             {
-                "id": 101,
+                "id": 1,
                 "question": 1,
                 "answer": "Paris",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 102,
+                "id": 2,
                 "question": 1,
                 "answer": "Lyon",
                 "fraction": 0,
@@ -61,7 +64,10 @@
         "generalfeedback": "Jupiter is the largest planet.",
         "defaultgrade": 1,
         "penalty": 0.1,
-        "qtype_id": 2,
+        "qtype": {
+            "id": 2,
+            "name": "multichoice"
+        },
         "length": 1,
         "stamp": "stamp002",
         "version": 1,
@@ -78,14 +84,14 @@
         },
         "answers": [
             {
-                "id": 201,
+                "id": 3,
                 "question": 2,
                 "answer": "Jupiter",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 202,
+                "id": 4,
                 "question": 2,
                 "answer": "Saturn",
                 "fraction": 0,
@@ -108,7 +114,10 @@
         "generalfeedback": "Hydrogen is the first element.",
         "defaultgrade": 1,
         "penalty": 0,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp003",
         "version": 1,
@@ -125,7 +134,7 @@
         },
         "answers": [
             {
-                "id": 301,
+                "id": 5,
                 "question": 3,
                 "answer": "Hydrogen",
                 "fraction": 1,
@@ -152,10 +161,13 @@
         "questiontext": "What is the formula for the Pythagorean Theorem?",
         "questiontextformat": 1,
         "image": "",
-        "generalfeedback": "a² + b² = c² is the formula.",
+        "generalfeedback": "a\u00b2 + b\u00b2 = c\u00b2 is the formula.",
         "defaultgrade": 1,
         "penalty": 0.1,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp004",
         "version": 1,
@@ -172,14 +184,14 @@
         },
         "answers": [
             {
-                "id": 401,
+                "id": 6,
                 "question": 4,
-                "answer": "a² + b² = c²",
+                "answer": "a\u00b2 + b\u00b2 = c\u00b2",
                 "fraction": 1,
                 "feedback": "That's right!"
             },
             {
-                "id": 402,
+                "id": 7,
                 "question": 4,
                 "answer": "a + b = c",
                 "fraction": 0,
@@ -202,7 +214,10 @@
         "generalfeedback": "The cheetah is the fastest land animal.",
         "defaultgrade": 1,
         "penalty": 0.2,
-        "qtype_id": 2,
+        "qtype": {
+            "id": 2,
+            "name": "multichoice"
+        },
         "length": 1,
         "stamp": "stamp005",
         "version": 1,
@@ -219,14 +234,14 @@
         },
         "answers": [
             {
-                "id": 501,
+                "id": 8,
                 "question": 5,
                 "answer": "Cheetah",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 502,
+                "id": 9,
                 "question": 5,
                 "answer": "Leopard",
                 "fraction": 0,
@@ -249,7 +264,10 @@
         "generalfeedback": "William Shakespeare wrote Hamlet.",
         "defaultgrade": 1,
         "penalty": 0.1,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp006",
         "version": 1,
@@ -266,14 +284,14 @@
         },
         "answers": [
             {
-                "id": 601,
+                "id": 10,
                 "question": 6,
                 "answer": "William Shakespeare",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 602,
+                "id": 11,
                 "question": 6,
                 "answer": "Charles Dickens",
                 "fraction": 0,
@@ -293,10 +311,13 @@
         "questiontext": "At what temperature does water boil at sea level?",
         "questiontextformat": 1,
         "image": "",
-        "generalfeedback": "Water boils at 100°C (212°F) at sea level.",
+        "generalfeedback": "Water boils at 100\u00b0C (212\u00b0F) at sea level.",
         "defaultgrade": 1,
         "penalty": 0,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp007",
         "version": 1,
@@ -313,16 +334,16 @@
         },
         "answers": [
             {
-                "id": 701,
+                "id": 12,
                 "question": 7,
-                "answer": "100°C",
+                "answer": "100\u00b0C",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 702,
+                "id": 13,
                 "question": 7,
-                "answer": "90°C",
+                "answer": "90\u00b0C",
                 "fraction": 0,
                 "feedback": "Close, but incorrect."
             }
@@ -343,7 +364,10 @@
         "generalfeedback": "The binary of 2 is 10.",
         "defaultgrade": 1,
         "penalty": 0,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp008",
         "version": 1,
@@ -360,14 +384,14 @@
         },
         "answers": [
             {
-                "id": 801,
+                "id": 14,
                 "question": 8,
                 "answer": "10",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 802,
+                "id": 15,
                 "question": 8,
                 "answer": "11",
                 "fraction": 0,
@@ -390,7 +414,10 @@
         "generalfeedback": "The heliocentric model places the Sun at the center.",
         "defaultgrade": 1,
         "penalty": 0.1,
-        "qtype_id": 2,
+        "qtype": {
+            "id": 2,
+            "name": "multichoice"
+        },
         "length": 1,
         "stamp": "stamp009",
         "version": 1,
@@ -407,14 +434,14 @@
         },
         "answers": [
             {
-                "id": 901,
+                "id": 16,
                 "question": 9,
                 "answer": "Heliocentric model",
                 "fraction": 1,
                 "feedback": "That's right!"
             },
             {
-                "id": 902,
+                "id": 17,
                 "question": 9,
                 "answer": "Geocentric model",
                 "fraction": 0,
@@ -437,7 +464,10 @@
         "generalfeedback": "Portuguese is the official language of Brazil.",
         "defaultgrade": 1,
         "penalty": 0,
-        "qtype_id": 1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
         "length": 1,
         "stamp": "stamp010",
         "version": 1,
@@ -454,18 +484,114 @@
         },
         "answers": [
             {
-                "id": 1001,
+                "id": 18,
                 "question": 10,
                 "answer": "Portuguese",
                 "fraction": 1,
                 "feedback": "Correct!"
             },
             {
-                "id": 1002,
+                "id": 19,
                 "question": 10,
                 "answer": "Spanish",
                 "fraction": 0,
                 "feedback": "No, that's spoken in many other Latin American countries."
+            }
+        ]
+    },
+    {
+        "id": 11,
+        "name": "Sample Question Name",
+        "category": {
+            "id": 10,
+            "name": "Geography",
+            "contextid": 1
+        },
+        "parent": 0,
+        "questiontext": "This is the question text.",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "This is some general feedback.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
+        "length": 1,
+        "stamp": "stamp681c533d92b4e",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1746686781,
+        "timemodified": 1746686781,
+        "createdby": {
+            "id": 1,
+            "fullname": "admin"
+        },
+        "modifiedby": {
+            "id": 1,
+            "fullname": "admin"
+        },
+        "answers": [
+            {
+                "id": 19,
+                "question": 10,
+                "answer": "Sample",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "id": 19,
+                "question": 10,
+                "answer": "Sample",
+                "fraction": 0,
+                "feedback": "Sample Testing"
+            }
+        ]
+    },
+    {
+        "id": 12,
+        "name": "Sample Question Name",
+        "category": {
+            "id": 10,
+            "name": "Geography",
+            "contextid": 1
+        },
+        "parent": 0,
+        "questiontext": "What is the capital of France?",
+        "questiontextformat": 1,
+        "image": "",
+        "generalfeedback": "The correct answer is Paris.",
+        "defaultgrade": 1,
+        "penalty": 0.1,
+        "qtype": {
+            "id": 1,
+            "name": "shortanswer"
+        },
+        "length": 1,
+        "stamp": "stamp681c54af97dcf",
+        "version": 1,
+        "hidden": 0,
+        "timecreated": 1746687151,
+        "timemodified": 1746687151,
+        "createdby": {
+            "id": 1,
+            "fullname": "admin"
+        },
+        "modifiedby": {
+            "id": 1,
+            "fullname": "admin"
+        },
+        "answers": [
+            {
+                "answer": "Paris",
+                "fraction": 1,
+                "feedback": "Correct!"
+            },
+            {
+                "answer": "Lyon",
+                "fraction": 0,
+                "feedback": "Try again."
             }
         ]
     }
