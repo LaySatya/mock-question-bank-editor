@@ -130,14 +130,22 @@ const importQuestionFromXML = (xmlString) => {
         correctAnswers: correctAnswers,
         history: [
           { 
-            version: "v1", 
-            date: new Date().toLocaleDateString(), 
-            author: "Imported", 
-            changes: "Imported from XML" 
+            version: "v1",
+                date: new Date().toLocaleDateString(),
+                author: "Imported",
+                changes: "Imported from XML"
               }
-          ]
-        };
-      });
+            ]
+          };
+        })
+        // Filter out duplicates by title and questionText
+        .filter(newQ =>
+          !prevQuestions.some(
+            q =>
+              q.title === newQ.title &&
+              q.questionText === newQ.questionText
+          )
+        );
       return [...prevQuestions, ...newQuestions];
     });
   } catch (error) {
