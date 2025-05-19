@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Edit, Eye, Copy, Clock, Trash, MessageCircle, X, CheckCircle, AlertTriangle, Filter, Download, Upload } from 'lucide-react';
 import { XMLParser } from 'fast-xml-parser';
+import { Check } from 'lucide-react';
 const QuestionBank = () => {
   // State management
   const [showQuestionText, setShowQuestionText] = useState(true);
@@ -19,50 +20,130 @@ const QuestionBank = () => {
     status: 'All',
     type: 'All'
   });
+
+  const mapQuestionType = (xmlType) => {
+  switch (xmlType) {
+    case "multichoice":
+      return "multiple";
+    case "essay":
+      return "essay";
+    case "matching":
+      return "matching";
+    case "shortanswer":
+      return "shortanswer";
+    default:
+      return "multiple";
+  }
+};
 const [currentPage, setCurrentPage] = useState(1);
 const questionsPerPage = 10;
 const startIdx = (currentPage - 1) * questionsPerPage;
 const endIdx = startIdx + questionsPerPage;
   const dropdownRef = useRef(null);
 
+  //state for tracking the dropdown
+  const [showQuestionsDropdown, setShowQuestionsDropdown] = useState(false);
+  //this function to handle the import
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const xmlContent = e.target.result;
+        importQuestionFromXML(xmlContent);
+        alert("XML import successful!");
+      } catch (error) {
+        alert("Error importing XML: " + error.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+};
 const importQuestionFromXML = (xmlString) => {
-  const parser = new XMLParser();
-  const result = parser.parse(xmlString);
-
-  // Extract question data (adjust as needed for your XML structure)
-  const q = result.question;
-  const answers = Array.isArray(q.answer) ? q.answer : [q.answer];
-
-  const newQuestion = {
-    id: Math.max(...questions.map(q => q.id)) + 1,
-    title: q.name.text,
-    status: "ready",
-    version: "v1",
-    createdBy: {
-      name: "Imported",
-      role: "",
-      date: new Date().toLocaleString()
-    },
-    comments: 0,
-    usage: 0,
-    lastUsed: "Never",
-    modifiedBy: {
-      name: "Imported",
-      role: "",
-      date: new Date().toLocaleString()
-    },
-    questionType: q['@_type'] === 'multichoice' ? 'multiple' : q['@_type'],
-    questionText: q.questiontext.text,
-    options: answers.map(a => ({
-      text: a.text,
-      correct: a['@_fraction'] === "100"
-    })),
-    history: [
-      { version: "v1", date: new Date().toLocaleDateString(), author: "Imported", changes: "Imported from XML" }
-    ]
-  };
-
-  setQuestions(prev => [...prev, newQuestion]);
+  try {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_'  // Ensures attributes are prefixed with @_
+    });
+    
+    const result = parser.parse(xmlString);
+    
+    // Check that the required elements exist
+    if (!result || !result.quiz || !result.quiz.question) {
+      throw new Error("Invalid XML structure - missing quiz or question elements");
+    }
+     // Handle both single questions and multiple questions
+    const xmlQuestions = Array.isArray(result.quiz.question)
+      ? result.quiz.question
+      : [result.quiz.question];
+          // Use the current state for ID generation
+      // Use the current state for ID generation
+    setQuestions(prevQuestions => {
+      const maxId = prevQuestions.length > 0 ? Math.max(...prevQuestions.map(q => q.id)) : 0;
+      const newQuestions = xmlQuestions.map((q, index) => {
+      // Safely access properties with fallbacks
+      const questionName = q.name?.text || `Imported Question ${index + 1}`;
+      const questionText = q.questiontext?.text || "No question text provided";
+      const questionType = q['@_type'] || "multiple";
+      
+      // Handle answers more safely
+      let options = [];
+      let correctAnswers = [];
+      
+      if (q.answer) {
+        // Convert to array if not already
+        const answers = Array.isArray(q.answer) ? q.answer : [q.answer];
+        
+        options = answers.map(a => {
+          const text = a.text || "No answer text";
+          const isCorrect = a['@_fraction'] === "100";
+          
+          if (isCorrect) {
+            correctAnswers.push(text);
+          }
+          
+          return text;
+        });
+      }
+      return {
+        id: maxId + index + 1,
+        title: questionName,
+        status: "draft", // Default to draft for safety
+        version: "v1",
+        createdBy: {
+          name: "Imported",
+          role: "",
+          date: new Date().toLocaleString()
+        },
+        comments: 0,
+        usage: 0,
+        lastUsed: "Never",
+        modifiedBy: {
+          name: "Imported",
+          role: "",
+          date: new Date().toLocaleString()
+        },
+        questionType: mapQuestionType(questionType),
+        questionText: questionText,
+        options: options,
+        correctAnswers: correctAnswers,
+        history: [
+          { 
+            version: "v1", 
+            date: new Date().toLocaleDateString(), 
+            author: "Imported", 
+            changes: "Imported from XML" 
+              }
+          ]
+        };
+      });
+      return [...prevQuestions, ...newQuestions];
+    });
+  } catch (error) {
+    console.error("XML Import Error:", error);
+    throw new Error(`Error importing XML: ${error.message}`);
+  }
 };
   // Mock data for questions
   const [questions, setQuestions] = useState([
@@ -751,7 +832,43 @@ const PreviewModal = ({ question, onClose }) => {
     <div className="max-w-full">
       {/* Top Buttons Row */}
       <div className="p-4 flex flex-wrap gap-2 items-center">
-        <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">
+
+          {/* Questions dropdown */}
+  <div className="relative">
+    <button 
+      className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded flex items-center"
+      onClick={() => setShowQuestionsDropdown(!showQuestionsDropdown)}
+    >
+      Questions <ChevronDown size={14} className="ml-2" />
+    </button>
+    
+    {showQuestionsDropdown && (
+      <div className="absolute left-0 mt-1 w-48 bg-gray-700 rounded shadow-lg z-10">
+        <button className="flex items-center w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-600">
+          <Check size={16} className="mr-2" /> Questions
+        </button>
+        <button className="flex items-center w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-600">
+          Categories
+        </button>
+        <label className="flex items-center w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-600 cursor-pointer">
+          <input
+            type="file"
+            accept=".xml"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          Import
+        </label>
+        <button 
+          className="flex items-center w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-600"
+          onClick={() => alert("Export functionality would go here")}
+        >
+          Export
+        </button>
+      </div>
+    )}
+  </div>
+        <button className="bg-blue-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">
           Create a new question ...
         </button>
         
