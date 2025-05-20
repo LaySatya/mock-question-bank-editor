@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Edit, Eye, Copy, Clock, Trash, MessageCircle, X, CheckCircle, AlertTriangle, Filter, Download, Upload } from 'lucide-react';
 import { XMLParser } from 'fast-xml-parser';
 import { Check } from 'lucide-react';
+import CreateQuestionModal from '../components/modals/CreateQuestionModal';
+
 const QuestionBank = () => {
   // State management
   const [showQuestionText, setShowQuestionText] = useState(true);
@@ -20,7 +22,7 @@ const QuestionBank = () => {
     status: 'All',
     type: 'All'
   });
-
+const [showCreateModal, setShowCreateModal] = useState(false);
   const mapQuestionType = (xmlType) => {
   switch (xmlType) {
     case "multichoice":
@@ -469,11 +471,11 @@ const importQuestionFromXML = (xmlString) => {
   // Get question type icon
   const getQuestionTypeIcon = (type) => {
     switch(type) {
-      case 'multiple': return "•";
-      case 'matching': return "⨯";
-      case 'essay': return "☰";
-      case 'shortanswer': return "☰";
-      default: return "•";
+      case 'multiple': return <img src="/src/assets/icon/Multiple-choice.svg" className="w-6 h-6" alt="icon" />;
+      case 'matching': return <img src="/src/assets/icon/Matching.svg" className="w-6 h-6" alt="icon" />;
+      case 'essay': return <img src="/src/assets/icon/Essay.svg" className="w-6 h-6" alt="icon" />;
+      case 'shortanswer':return <img src="/src/assets/icon/Short-answer.svg" className="w-6 h-6" alt="icon" />;
+      default: return <span className="w-6 h-6 inline-block">•</span>;
     }
   };
 
@@ -876,7 +878,10 @@ const PreviewModal = ({ question, onClose }) => {
       </div>
     )}
   </div>
-        <button className="bg-blue-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">
+              <button
+          className="bg-blue-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded"
+          onClick={() => setShowCreateModal(true)}
+        >
           Create a new question ...
         </button>
         
@@ -1280,6 +1285,18 @@ const PreviewModal = ({ question, onClose }) => {
         <HistoryModal 
           question={historyModal} 
           onClose={() => setHistoryModal(null)} 
+        />
+      )}
+       {/* Place your CreateQuestionModal here */}
+      {showCreateModal && (
+        <CreateQuestionModal
+          onClose={() => setShowCreateModal(false)}
+          onSelectType={(type) => {
+            setShowCreateModal(false);
+            // alert(`Selected question type: ${type.name}`);
+            // Optionally, open another modal or set up state for question creation
+          }}
+          questions={questions}
         />
       )}
     </div>
