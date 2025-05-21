@@ -3,8 +3,19 @@ import { ChevronDown, Edit, Eye, Copy, Clock, Trash, MessageCircle, X, CheckCirc
 import { XMLParser } from 'fast-xml-parser';
 import { Check } from 'lucide-react';
 import CreateQuestionModal from '../components/modals/CreateQuestionModal';
+import CreateTrueFalseQuestion from '../components/questions/CreateTrueFalseQuestion';
+import TrueFalseQuestionDemo from '../components/demos/TrueFalseQuestionDemo';
+
 
 const QuestionBank = () => {
+
+
+
+  ///edit q place 
+  const [editingQuestionData, setEditingQuestionData] = useState(null);
+//true false question
+  const [showTrueFalseModal, setShowTrueFalseModal] = useState(false);
+//const [trueFalsePreview, setTrueFalsePreview] = useState(null);
   // State management
   const [showQuestionText, setShowQuestionText] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
@@ -33,6 +44,8 @@ const [showCreateModal, setShowCreateModal] = useState(false);
       return "matching";
     case "shortanswer":
       return "shortanswer";
+    case "truefalse":
+      return "truefalse";
     default:
       return "multiple";
   }
@@ -41,10 +54,9 @@ const [currentPage, setCurrentPage] = useState(1);
 const questionsPerPage = 10;
 const startIdx = (currentPage - 1) * questionsPerPage;
 const endIdx = startIdx + questionsPerPage;
-  const dropdownRef = useRef(null);
-
+const dropdownRef = useRef(null);
   //state for tracking the dropdown
-  const [showQuestionsDropdown, setShowQuestionsDropdown] = useState(false);
+const [showQuestionsDropdown, setShowQuestionsDropdown] = useState(false);
   //this function to handle the import
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
@@ -462,7 +474,7 @@ const importQuestionFromXML = (xmlString) => {
   // Handle select all questions
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedQuestions(questions.map(q => q.id));
+      setSelectedQuestions(filteredQuestions.map(q => q.id));
     } else {
       setSelectedQuestions([]);
     }
@@ -475,9 +487,12 @@ const importQuestionFromXML = (xmlString) => {
       case 'matching': return <img src="/src/assets/icon/Matching.svg" className="w-6 h-6" alt="icon" />;
       case 'essay': return <img src="/src/assets/icon/Essay.svg" className="w-6 h-6" alt="icon" />;
       case 'shortanswer':return <img src="/src/assets/icon/Short-answer.svg" className="w-6 h-6" alt="icon" />;
+      case 'truefalse':
+  return <span className="w-6 h-6 inline-block">✔️</span>;
       default: return <span className="w-6 h-6 inline-block">•</span>;
     }
   };
+///shandle bulk edit
 
   // Handle bulk deletion
   const handleBulkDelete = () => {
@@ -589,7 +604,7 @@ const importQuestionFromXML = (xmlString) => {
     }
   };
  
- 
+ ///edit for title question 
 const startEditingTitle = (question) => {
   setEditingQuestion(question.id);
   setNewQuestionTitle(question.title);
@@ -680,10 +695,9 @@ const HistoryModal = ({ question, onClose }) => {
   if (!question) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      {/* No dark background overlay */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-30">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl pointer-events-auto">
-        {/* Header with close button */}
+        {/* Header */}
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-medium">Version History: {question.title}</h2>
           <button 
@@ -693,8 +707,7 @@ const HistoryModal = ({ question, onClose }) => {
             <X size={20} />
           </button>
         </div>
-        
-        {/* Content area */}
+        {/* Content */}
         <div className="p-6">
           <table className="min-w-full border-collapse border border-gray-300">
             <thead>
@@ -717,14 +730,13 @@ const HistoryModal = ({ question, onClose }) => {
             </tbody>
           </table>
         </div>
-        
-        {/* Footer with close button */}
+        {/* Footer */}
         <div className="flex justify-end p-4 border-t bg-gray-50">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
           >
-            <Close></Close>
+            Close
           </button>
         </div>
       </div>
@@ -738,7 +750,6 @@ const PreviewModal = ({ question, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      {/* Notice: no dark background overlay here */}
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl pointer-events-auto">
         {/* Header with close button */}
         <div className="flex justify-between items-center p-4 border-b">
@@ -750,52 +761,61 @@ const PreviewModal = ({ question, onClose }) => {
             <X size={20} />
           </button>
         </div>
-        
         {/* Content area */}
         <div className="p-6">
           <div className="border rounded-md p-4 mb-6 bg-gray-50">
             <div className="mb-4">
               <h3 className="font-bold mb-2">Question Text</h3>
-              <p>This is where the question text would appear.</p>
+              <p>{question.questionText || "No question text"}</p>
             </div>
-            
-            {question.questionType === 'essay' && (
+            {/* Show options for multiple choice */}
+            {question.questionType === 'multiple' && question.options && (
+              <div>
+                <h3 className="font-bold mb-2">Options:</h3>
+                <div className="space-y-2">
+                  {question.options.map((opt, idx) => (
+                    <div className="flex items-start" key={idx}>
+                      <input
+                        type="radio"
+                        className="mt-1 mr-2"
+                        name="option"
+                        checked={question.correctAnswers && question.correctAnswers.includes(opt)}
+                        readOnly
+                      />
+                      <div>{opt}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Show correct answer for true/false */}
+            {question.questionType === 'truefalse' && (
+              <div>
+                <h3 className="font-bold mb-2">Correct Answer:</h3>
+                <div>
+                  {question.correctAnswer === 'true' ? 'True' : 'False'}
+                </div>
+                <div className="mt-2">
+                  <strong>Feedback (True):</strong> {question.feedbackTrue}
+                </div>
+                <div>
+                  <strong>Feedback (False):</strong> {question.feedbackFalse}
+                </div>
+              </div>
+            )}
+            {/* Show essay/short answer */}
+            {['essay', 'shortanswer'].includes(question.questionType) && (
               <div>
                 <h3 className="font-bold mb-2">Answer:</h3>
                 <textarea
                   className="w-full border rounded-md p-2"
                   rows="5"
-                  placeholder="Student would enter essay response here"
+                  placeholder="Student would enter response here"
                   readOnly
                 ></textarea>
               </div>
             )}
-            
-            {question.questionType === 'multiple' && (
-              <div>
-                <h3 className="font-bold mb-2">Options:</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start">
-                    <input type="radio" className="mt-1 mr-2" name="option" />
-                    <div>Option 1</div>
-                  </div>
-                  <div className="flex items-start">
-                    <input type="radio" className="mt-1 mr-2" name="option" />
-                    <div>Option 2</div>
-                  </div>
-                  <div className="flex items-start">
-                    <input type="radio" className="mt-1 mr-2" name="option" />
-                    <div>Option 3</div>
-                  </div>
-                  <div className="flex items-start">
-                    <input type="radio" className="mt-1 mr-2" name="option" checked />
-                    <div>Option 4 (Correct)</div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-          
           <div className="grid grid-cols-2 gap-8">
             <div>
               <h3 className="font-bold mb-2">Question Details</h3>
@@ -806,7 +826,6 @@ const PreviewModal = ({ question, onClose }) => {
                 <p><strong>Version:</strong> {question.version}</p>
               </div>
             </div>
-            
             <div>
               <h3 className="font-bold mb-2">Usage Information</h3>
               <div className="space-y-1">
@@ -817,7 +836,6 @@ const PreviewModal = ({ question, onClose }) => {
             </div>
           </div>
         </div>
-        
         {/* Footer with close button */}
         <div className="flex justify-end p-4 border-t bg-gray-50">
           <button
@@ -830,7 +848,6 @@ const PreviewModal = ({ question, onClose }) => {
       </div>
     </div>
   );
-  
 };
  const filteredQuestions = questions.filter(q =>
     q.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -1012,7 +1029,7 @@ const PreviewModal = ({ question, onClose }) => {
                   type="checkbox"
                   className="h-4 w-4"
                   onChange={handleSelectAll}
-                  checked={selectedQuestions.length === questions.length && questions.length > 0}
+                  checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
                 />
               </th>
               <th className="border-b px-4 py-2 text-left font-medium text-blue-500">
@@ -1102,7 +1119,8 @@ const PreviewModal = ({ question, onClose }) => {
                           </button>
                           <button
                             onClick={() => {
-                              startEditingTitle(question);
+                              //startEditingTitle(question);
+                              setEditingQuestionData(question);
                               setOpenActionDropdown(null);
                             }}
                             className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
@@ -1264,7 +1282,40 @@ const PreviewModal = ({ question, onClose }) => {
       </div>
 
      
-
+{/* edit  */}
+{editingQuestionData && editingQuestionData.questionType === 'truefalse' && (
+  <TrueFalseQuestionDemo
+    question={editingQuestionData}
+    onClose={() => setEditingQuestionData(null)}
+    onSave={updatedData => {
+      setQuestions(prev =>
+        prev.map(q =>
+          q.id === editingQuestionData.id
+            ? {
+                ...q,
+                ...updatedData,
+                version: `v${parseInt(q.version.substring(1)) + 1}`,
+                modifiedBy: {
+                  ...q.modifiedBy,
+                  date: new Date().toLocaleString()
+                },
+                history: [
+                  ...q.history,
+                  {
+                    version: `v${parseInt(q.version.substring(1)) + 1}`,
+                    date: new Date().toLocaleDateString(),
+                    author: "Current User",
+                    changes: "Edited question"
+                  }
+                ]
+              }
+            : q
+        )
+      );
+      setEditingQuestionData(null);
+    }}
+  />
+)}
       {/* Modals */}
        
       {showSaveConfirm && (
@@ -1292,13 +1343,71 @@ const PreviewModal = ({ question, onClose }) => {
         <CreateQuestionModal
           onClose={() => setShowCreateModal(false)}
           onSelectType={(type) => {
+        console.log('Selected type:', type);
             setShowCreateModal(false);
+            if (type.name === 'True/False') {
+        setShowTrueFalseModal(true);
+      }
             // alert(`Selected question type: ${type.name}`);
             // Optionally, open another modal or set up state for question creation
           }}
           questions={questions}
         />
       )}
+
+      {/*  for True/False workflow */}
+  {showTrueFalseModal && (
+  <CreateTrueFalseQuestion
+    onClose={() => setShowTrueFalseModal(false)}
+    onSave={(questionData) => {
+      setShowTrueFalseModal(false);
+      const safeQuestion = {
+        ...questionData,
+        title: questionData.title || 'Untitled',
+        questionText: questionData.questionText || '',
+        defaultMark: questionData.defaultMark ?? 1,
+        generalFeedback: questionData.generalFeedback || '',
+        correctAnswer: questionData.correctAnswer || 'true',
+        penalty: questionData.penalty ?? 0,
+        feedbackTrue: questionData.feedbackTrue || '',
+        feedbackFalse: questionData.feedbackFalse || '',
+        status: 'draft'
+      };
+      setQuestions(prev => [
+        ...prev,
+        {
+          id: prev.length > 0 ? Math.max(...prev.map(q => q.id)) + 1 : 1,
+          questionType: "truefalse",
+          version: "v1",
+          createdBy: {
+            name: "Current User",
+            role: "",
+            date: new Date().toLocaleString()
+          },
+          modifiedBy: {
+            name: "Current User",
+            role: "",
+            date: new Date().toLocaleString()
+          },
+          comments: 0,
+          usage: 0,
+          lastUsed: "Never",
+          history: [
+            {
+              version: "v1",
+              date: new Date().toLocaleDateString(),
+              author: "Current User",
+              changes: "Created True/False question"
+            }
+          ],
+          status: "draft",
+          ...safeQuestion
+        }
+      ]);
+    }}
+  />
+)}
+
     </div>
   );
 };

@@ -88,7 +88,7 @@ const CreateQuestionModal = ({ onClose, onSelectType, questions }) => {
   const filteredQuestionTypes = questionTypes.filter(type => 
     type.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+ const selectedTypeObj = questionTypes.find(q => q.name === selectedType);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-25">
       <div className="bg-white rounded-lg shadow-xl w-[90%] max-w-5xl h-[90vh] flex">
@@ -119,15 +119,15 @@ const CreateQuestionModal = ({ onClose, onSelectType, questions }) => {
                 <label 
                   key={index} 
                   className={`w-full flex items-center p-2 hover:bg-gray-200 rounded cursor-pointer
-                    ${selectedType === type ? 'bg-blue-100' : ''}`}
+  ${selectedType === type.name ? 'bg-blue-100' : ''}`}
                 >
                   <input 
-                    type="radio" 
-                    name="questionType" 
-                    className="mr-3"
-                    checked={selectedType === type}
-                    onChange={() => setSelectedType(type)}
-                  />
+                type="radio" 
+                name="questionType" 
+                className="mr-3"
+                checked={selectedType === type.name}
+                onChange={() => setSelectedType(type.name)}
+                />
                   <span className="mr-3 text-xl">{type.icon}</span>
                   <span>{type.name}</span>
                 </label>
@@ -138,45 +138,46 @@ const CreateQuestionModal = ({ onClose, onSelectType, questions }) => {
           {/* Existing Questions Section */}
           <div className="p-2 border-t">
             <h3 className="text-md font-semibold mb-2">OTHER</h3>
-            <div className="max-h-40 overflow-y-auto text-sm">
-              <div className="py-1 px-2 hover:bg-gray-200 rounded">
-                Description
-              </div>
-            </div>
+           <div className="max-h-40 overflow-y-auto text-sm">
+        <div className="flex items-center gap-2 py-1 px-2 hover:bg-gray-200 rounded cursor-pointer">
+            <img src="/src/assets/icon/Description.svg" className="w-6 h-6" alt="Description icon" />
+            <span>Description</span>
+        </div>
+        </div>
           </div>
         </div>
 
         {/* Right Panel - Description */}
         <div className="w-2/3 p-6 flex flex-col">
           <h2 className="text-xl mb-4">Select a question type to see its description.</h2>
-          
-          {selectedType ? (
+        
+
+            {selectedTypeObj ? (
             <div className="flex-grow flex flex-col">
-              <div className="text-6xl mb-4 text-center">{selectedType.icon}</div>
-              <h3 className="text-xl font-semibold text-center mb-4">{selectedType.name}</h3>
-              <p className="text-gray-600 mb-6 text-center flex-grow">{selectedType.description}</p>
-              
-              <div className="flex justify-end space-x-3">
+                <div className="text-6xl mb-4 text-center">{selectedTypeObj.icon}</div>
+                <h3 className="text-xl font-semibold text-center mb-4">{selectedTypeObj.name}</h3>
+                <p className="text-gray-600 mb-6 text-center flex-grow">{selectedTypeObj.description}</p>
+                <div className="flex justify-end space-x-3">
                 <button 
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                  onClick={onClose}
+                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                    onClick={onClose}
                 >
-                  Cancel
+                    Cancel
                 </button>
                 <button 
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                  onClick={() => onSelectType(selectedType)}
-                  disabled={!selectedType}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                    onClick={() => onSelectType(selectedTypeObj)}
+                    disabled={!selectedTypeObj}
                 >
-                  Add
+                    Add
                 </button>
-              </div>
+                </div>
             </div>
-          ) : (
+            ) : (
             <div className="text-center text-gray-500 flex-grow flex items-center justify-center">
-              Select a question type to see its description.
+                Select a question type to see its description.
             </div>
-          )}
+            )}
         </div>
       </div>
     </div>

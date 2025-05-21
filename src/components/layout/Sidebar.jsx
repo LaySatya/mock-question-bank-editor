@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, FileQuestion } from 'lucide-react';
+import { Home, FileQuestion, User } from 'lucide-react';
 
 const Sidebar = ({ collapsed }) => {
   // Navigation items
@@ -14,6 +14,11 @@ const Sidebar = ({ collapsed }) => {
       label: 'Question Bank', 
       icon: <FileQuestion size={20} />, 
       path: '/question-bank' 
+    },
+     { 
+      label: 'Manage Users', 
+      icon: <User size={20} />, 
+      path: '/manage-users' 
     }
   ];
 
