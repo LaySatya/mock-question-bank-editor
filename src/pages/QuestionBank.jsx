@@ -6,12 +6,14 @@ import CreateQuestionModal from '../components/modals/CreateQuestionModal';
 import CreateTrueFalseQuestion from '../components/questions/CreateTrueFalseQuestion';
 import TrueFalseQuestionDemo from '../components/demos/TrueFalseQuestionDemo';
 
+import BulkEditQuestionsModal from '../components/modals/BulkEditQuestionsModal';
+
 
 const QuestionBank = () => {
+//use for edit multiple questions
+const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
-
-
-  ///edit q place 
+  ///edit q place only one question  
   const [editingQuestionData, setEditingQuestionData] = useState(null);
 //true false question
   const [showTrueFalseModal, setShowTrueFalseModal] = useState(false);
@@ -160,7 +162,7 @@ const importQuestionFromXML = (xmlString) => {
               q.questionText === newQ.questionText
           )
         );
-      return [...prevQuestions, ...newQuestions];
+      return [ ...newQuestions ,...prevQuestions];
     });
   } catch (error) {
     console.error("XML Import Error:", error);
@@ -592,7 +594,7 @@ const importQuestionFromXML = (xmlString) => {
       lastUsed: "Never"
     };
     
-    setQuestions(prev => [...prev, newQuestion]);
+    setQuestions(prev => [newQuestion, ...prev]);
     setOpenActionDropdown(null);
   };
 
@@ -928,12 +930,24 @@ const PreviewModal = ({ question, onClose }) => {
         <div className="p-4 bg-blue-50 flex flex-wrap gap-2 items-center">
           <span>{selectedQuestions.length} questions selected</span>
           
-          <button 
+          {/* <button 
             className="bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-3 rounded flex items-center text-sm"
             onClick={() => alert('Bulk edit would open a modal')}
           >
             <Edit size={14} className="mr-1" /> Edit
-          </button>
+          </button> */}
+        <button 
+          className="bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-3 rounded flex items-center text-sm"
+          onClick={() => {
+            if (selectedQuestions.length > 0) {
+              setShowBulkEditModal(true);
+            } else {
+              alert('Please select at least one question to edit.');
+            }
+          }}
+        >
+          <Edit size={14} className="mr-1" /> Edit
+        </button>
           
           <button 
             className="bg-red-100 hover:bg-red-200 text-red-800 py-1 px-3 rounded flex items-center text-sm"
@@ -1010,6 +1024,7 @@ const PreviewModal = ({ question, onClose }) => {
         >
           <option value="All">All Question Types</option>
           <option value="multiple">Multiple Choice</option>
+          <option value="truefalse">True False </option>
           <option value="essay">Essay</option>
           <option value="matching">Matching</option>
           <option value="shortanswer">Short Answer</option>
@@ -1281,7 +1296,42 @@ const PreviewModal = ({ question, onClose }) => {
     </div>
       </div>
 
-     
+    {/* edit question multiple questions while select  */}
+{showBulkEditModal && (
+  <BulkEditQuestionsModal
+    questions={questions.filter(q => selectedQuestions.includes(q.id))}
+    onClose={() => setShowBulkEditModal(false)}
+    onSave={updatedQuestions => {
+      setQuestions(prev =>
+        prev.map(q => {
+          const edited = updatedQuestions.find(uq => uq.id === q.id);
+          return edited
+            ? {
+                ...q,
+                ...edited,
+                version: `v${parseInt(q.version.substring(1)) + 1}`,
+                modifiedBy: {
+                  ...q.modifiedBy,
+                  date: new Date().toLocaleString()
+                },
+                history: [
+                  ...q.history,
+                  {
+                    version: `v${parseInt(q.version.substring(1)) + 1}`,
+                    date: new Date().toLocaleDateString(),
+                    author: "Current User",
+                    changes: "Bulk edited"
+                  }
+                ]
+              }
+            : q;
+        })
+      );
+      setShowBulkEditModal(false);
+      setSelectedQuestions([]);
+    }}
+  />
+)}
 {/* edit  */}
 {editingQuestionData && editingQuestionData.questionType === 'truefalse' && (
   <TrueFalseQuestionDemo
@@ -1374,7 +1424,6 @@ const PreviewModal = ({ question, onClose }) => {
         status: 'draft'
       };
       setQuestions(prev => [
-        ...prev,
         {
           id: prev.length > 0 ? Math.max(...prev.map(q => q.id)) + 1 : 1,
           questionType: "truefalse",
@@ -1402,7 +1451,8 @@ const PreviewModal = ({ question, onClose }) => {
           ],
           status: "draft",
           ...safeQuestion
-        }
+        },
+        ...prev // <--change  this to get question add new question stay at the top
       ]);
     }}
   />
