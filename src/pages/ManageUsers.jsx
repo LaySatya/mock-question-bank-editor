@@ -1,65 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Search, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Mail, 
-  CheckCircle,
-  XCircle,
-  Download,
-  Upload,
-  UserPlus,
-  Shield,
-  User
+  Search, MoreHorizontal, Edit, Trash2, Eye, Mail, CheckCircle,
+  XCircle, Download, Upload, UserPlus, Shield, User
 } from 'lucide-react';
-
+import { useAuth } from '@clerk/clerk-react';
 const ManageUsers = () => {
-  // Sample data - replace with real data later
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'Pisey Tep',
-      email: 'pisey.tep@school.edu',
-      role: 'Teacher',
-      status: 'Active',
-      lastLogin: '2024-01-15 09:30 AM',
-      department: 'Mathematics',
-      phone: '+1 234-567-8900'
-    },
-    {
-      id: 2,
-      name: 'Pisey Tep',
-      email: 'pisey.tep@school.edu',
-      role: 'Admin',
-      status: 'Active',
-      lastLogin: '2024-01-14 02:15 PM',
-      department: 'Administration',
-      phone: '+1 234-567-8901'
-    },
-    {
-      id: 3,
-      name: 'Pisey Tep',
-      email: 'pisey.tep@school.edu',
-      role: 'Student',
-      status: 'Active',
-      lastLogin: '2024-01-13 11:45 AM',
-      department: 'Computer Science',
-      phone: '+1 234-567-8902'
-    },
-    {
-      id: 4,
-      name: 'Pisey Tep',
-      email: 'pisey.tep@school.edu',
-      role: 'Teacher',
-      status: 'Inactive',
-      lastLogin: '2024-01-10 04:20 PM',
-      department: 'English',
-      phone: '+1 234-567-8903'
-    }
-  ]);
-
+  const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [openActionDropdown, setOpenActionDropdown] = useState(null);
@@ -68,9 +14,62 @@ const ManageUsers = () => {
     status: 'All',
     department: 'All'
   });
-
   const dropdownRef = useRef(null);
+const { getToken, isLoaded, isSignedIn } = useAuth();
 
+
+
+// Add this useEffect to log the Clerk token
+useEffect(() => {
+  async function fetchToken() {
+    const token = await getToken();
+    console.log('Clerk token:', token);
+  }
+  fetchToken();
+}, [getToken]);
+
+    const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  {loading && <div className="text-blue-600 mb-4">Loading users...</div>}
+{error && <div className="text-red-600 mb-4">{error}</div>}
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    async function fetchUsers() {
+      setLoading(true);
+      setError(null);
+      const token = await getToken();
+      if (!token) {
+        setError('No Clerk token found');
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+      fetch('/api/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+           console.log('Fetched users:', data);
+          if (!Array.isArray(data)) {
+            setUsers([]);
+            setError('API did not return an array');
+          } else {
+             setUsers(data);
+            //setUsers(data.map(/* ...mapping... */));
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setUsers([]);
+          setLoading(false);
+        });
+    }
+    fetchUsers();
+  }, [getToken, isLoaded, isSignedIn]);
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -78,7 +77,6 @@ const ManageUsers = () => {
         setOpenActionDropdown(null);
       }
     }
-    
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -92,11 +90,9 @@ const ManageUsers = () => {
     const matchesRole = filters.role === 'All' || user.role === filters.role;
     const matchesStatus = filters.status === 'All' || user.status === filters.status;
     const matchesDepartment = filters.department === 'All' || user.department === filters.department;
-    
     return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
   });
 
-  // Get status styling
   const getStatusColor = (status) => {
     switch(status) {
       case 'Active': return 'text-green-600 bg-green-100';
@@ -106,7 +102,6 @@ const ManageUsers = () => {
     }
   };
 
-  // Get role icon
   const getRoleIcon = (role) => {
     switch(role) {
       case 'Admin': return <Shield className="w-4 h-4 text-purple-600" />;
@@ -116,7 +111,6 @@ const ManageUsers = () => {
     }
   };
 
-  // Handle user selection
   const toggleUserSelection = (userId) => {
     setSelectedUsers(prev => 
       prev.includes(userId) 
@@ -133,7 +127,6 @@ const ManageUsers = () => {
     }
   };
 
-  // User actions
   const handleViewUser = (user) => {
     alert(`Viewing details for: ${user.name}`);
     setOpenActionDropdown(null);
@@ -170,8 +163,6 @@ const ManageUsers = () => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Users</h1>
-        <p className="text-gray-600"></p>
-        {/* <p className="text-gray-600">Add, edit, and manage user accounts and permissions</p> */}
       </div>
 
       {/* Top Actions */}
@@ -184,7 +175,6 @@ const ManageUsers = () => {
             <UserPlus size={16} />
             Add New User
           </button>
-          
           <button
             onClick={() => alert('Import users functionality coming soon!')}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -192,7 +182,6 @@ const ManageUsers = () => {
             <Upload size={16} />
             Import Users
           </button>
-          
           <button
             onClick={() => alert('Export users functionality coming soon!')}
             className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -201,7 +190,6 @@ const ManageUsers = () => {
             Export Users
           </button>
         </div>
-
         {selectedUsers.length > 0 && (
           <div className="flex gap-2 items-center">
             <span className="text-sm text-gray-600">{selectedUsers.length} selected</span>
@@ -229,7 +217,6 @@ const ManageUsers = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-
           <select
             className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             value={filters.role}
@@ -240,7 +227,6 @@ const ManageUsers = () => {
             <option value="Teacher">Teacher</option>
             <option value="Student">Student</option>
           </select>
-
           <select
             className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             value={filters.status}
@@ -251,7 +237,6 @@ const ManageUsers = () => {
             <option value="Inactive">Inactive</option>
             <option value="Pending">Pending</option>
           </select>
-
           <select
             className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             value={filters.department}
@@ -350,7 +335,6 @@ const ManageUsers = () => {
                       >
                         <MoreHorizontal size={16} />
                       </button>
-                      
                       {openActionDropdown === user.id && (
                         <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border">
                           <button
@@ -401,7 +385,6 @@ const ManageUsers = () => {
             </tbody>
           </table>
         </div>
-
         {/* Results Summary */}
         <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
           <div className="text-sm text-gray-700">

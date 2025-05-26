@@ -91,7 +91,7 @@ const CreateQuestionModal = ({ onClose, onSelectType, questions }) => {
  const selectedTypeObj = questionTypes.find(q => q.name === selectedType);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-25">
-      <div className="bg-white rounded-lg shadow-xl w-[90%] max-w-5xl h-[90vh] flex">
+      <div className="bg-white rounded-lg shadow-xl w-[90%] max-w-5xl h-[50vh] flex">
         {/* Left Panel - Question Types */}
         <div className="w-1/3 border-r bg-gray-50 flex flex-col">
           <div className="p-4 border-b flex justify-between items-center">

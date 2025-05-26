@@ -4,7 +4,8 @@ import { XMLParser } from 'fast-xml-parser';
 import { Check } from 'lucide-react';
 import CreateQuestionModal from '../components/modals/CreateQuestionModal';
 import CreateTrueFalseQuestion from '../components/questions/CreateTrueFalseQuestion';
-import TrueFalseQuestionDemo from '../components/demos/TrueFalseQuestionDemo';
+import CreateMultipleChoiceQuestion from '../components/questions/CreateMultipleChoiceQuestion';
+
 
 import BulkEditQuestionsModal from '../components/modals/BulkEditQuestionsModal';
 
@@ -15,8 +16,10 @@ const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
   ///edit q place only one question  
   const [editingQuestionData, setEditingQuestionData] = useState(null);
+  
 //true false question
   const [showTrueFalseModal, setShowTrueFalseModal] = useState(false);
+  const [showMultipleChoiceModal, setShowMultipleChoiceModal] = useState(false);
 //const [trueFalsePreview, setTrueFalsePreview] = useState(null);
   // State management
   const [showQuestionText, setShowQuestionText] = useState(true);
@@ -51,6 +54,17 @@ const [showCreateModal, setShowCreateModal] = useState(false);
     default:
       return "multiple";
   }
+};
+
+const BULK_EDIT_COMPONENTS = {
+  truefalse: CreateTrueFalseQuestion,
+  multiple: CreateMultipleChoiceQuestion,
+  // Add more types as needed
+};
+const EDIT_COMPONENTS = {
+  truefalse: CreateTrueFalseQuestion,
+  multiple: CreateMultipleChoiceQuestion,
+  // Add more types as needed
 };
 const [currentPage, setCurrentPage] = useState(1);
 const questionsPerPage = 10;
@@ -489,8 +503,8 @@ const importQuestionFromXML = (xmlString) => {
       case 'matching': return <img src="/src/assets/icon/Matching.svg" className="w-6 h-6" alt="icon" />;
       case 'essay': return <img src="/src/assets/icon/Essay.svg" className="w-6 h-6" alt="icon" />;
       case 'shortanswer':return <img src="/src/assets/icon/Short-answer.svg" className="w-6 h-6" alt="icon" />;
-      case 'truefalse':
-  return <span className="w-6 h-6 inline-block">✔️</span>;
+      case 'truefalse':return <img src="/src/assets/icon/True-False.svg" className="w-6 h-6" alt="icon" />;
+  
       default: return <span className="w-6 h-6 inline-block">•</span>;
     }
   };
@@ -1297,47 +1311,101 @@ const PreviewModal = ({ question, onClose }) => {
       </div>
 
     {/* edit question multiple questions while select  */}
-{showBulkEditModal && (
-  <BulkEditQuestionsModal
-    questions={questions.filter(q => selectedQuestions.includes(q.id))}
-    onClose={() => setShowBulkEditModal(false)}
-    onSave={updatedQuestions => {
-      setQuestions(prev =>
-        prev.map(q => {
-          const edited = updatedQuestions.find(uq => uq.id === q.id);
-          return edited
-            ? {
-                ...q,
-                ...edited,
-                version: `v${parseInt(q.version.substring(1)) + 1}`,
-                modifiedBy: {
-                  ...q.modifiedBy,
-                  date: new Date().toLocaleString()
-                },
-                history: [
-                  ...q.history,
-                  {
+{/* edit question multiple questions while select  */}
+{showBulkEditModal && (() => {
+  // Get selected questions
+  const questionsToEdit = questions.filter(q => selectedQuestions.includes(q.id));
+  // Get unique types
+  const types = [...new Set(questionsToEdit.map(q => q.questionType))];
+
+  // If all selected are the same type and supported, show type-specific bulk edit
+  if (types.length === 1 && BULK_EDIT_COMPONENTS[types[0]]) {
+    const BulkEditComponent = BULK_EDIT_COMPONENTS[types[0]];
+    return (
+      <BulkEditComponent
+        questions={questionsToEdit}
+        onClose={() => setShowBulkEditModal(false)}
+        onSave={updatedQuestions => {
+          setQuestions(prev =>
+            prev.map(q => {
+              const edited = updatedQuestions.find(uq => uq.id === q.id);
+              return edited
+                ? {
+                    ...q,
+                    ...edited,
                     version: `v${parseInt(q.version.substring(1)) + 1}`,
-                    date: new Date().toLocaleDateString(),
-                    author: "Current User",
-                    changes: "Bulk edited"
+                    modifiedBy: {
+                      ...q.modifiedBy,
+                      date: new Date().toLocaleString()
+                    },
+                    history: [
+                      ...q.history,
+                      {
+                        version: `v${parseInt(q.version.substring(1)) + 1}`,
+                        date: new Date().toLocaleDateString(),
+                        author: "Current User",
+                        changes: "Bulk edited"
+                      }
+                    ]
                   }
-                ]
-              }
-            : q;
-        })
-      );
-      setShowBulkEditModal(false);
-      setSelectedQuestions([]);
-    }}
-  />
-)}
-{/* edit  */}
-{editingQuestionData && editingQuestionData.questionType === 'truefalse' && (
-  <TrueFalseQuestionDemo
-    question={editingQuestionData}
-    onClose={() => setEditingQuestionData(null)}
-    onSave={updatedData => {
+                : q;
+            })
+          );
+          setShowBulkEditModal(false);
+          setSelectedQuestions([]);
+        }}
+        isBulk
+      />
+    );
+  } else if (questionsToEdit.length > 0) {
+    // If mixed types or no specialized editor, show generic bulk edit modal
+    return (
+      <BulkEditQuestionsModal
+        questions={questionsToEdit}
+        onClose={() => setShowBulkEditModal(false)}
+        onSave={updatedQuestions => {
+          setQuestions(prev =>
+            prev.map(q => {
+              const edited = updatedQuestions.find(uq => uq.id === q.id);
+              return edited
+                ? {
+                    ...q,
+                    ...edited,
+                    version: `v${parseInt(q.version.substring(1)) + 1}`,
+                    modifiedBy: {
+                      ...q.modifiedBy,
+                      date: new Date().toLocaleString()
+                    },
+                    history: [
+                      ...q.history,
+                      {
+                        version: `v${parseInt(q.version.substring(1)) + 1}`,
+                        date: new Date().toLocaleDateString(),
+                        author: "Current User",
+                        changes: "Bulk edited"
+                      }
+                    ]
+                  }
+                : q;
+            })
+          );
+          setShowBulkEditModal(false);
+          setSelectedQuestions([]);
+        }}
+      />
+    );
+  } else {
+    return null;
+  }
+})()}
+{/* edit one by one  */}
+{editingQuestionData && EDIT_COMPONENTS[editingQuestionData.questionType] && (
+  React.createElement(EDIT_COMPONENTS[editingQuestionData.questionType], {
+    ...(editingQuestionData.questionType === "truefalse"
+      ? { existingQuestion: editingQuestionData }
+      : { question: editingQuestionData }),
+    onClose: () => setEditingQuestionData(null),
+    onSave: updatedData => {
       setQuestions(prev =>
         prev.map(q =>
           q.id === editingQuestionData.id
@@ -1363,8 +1431,8 @@ const PreviewModal = ({ question, onClose }) => {
         )
       );
       setEditingQuestionData(null);
-    }}
-  />
+    }
+  })
 )}
       {/* Modals */}
        
@@ -1389,21 +1457,17 @@ const PreviewModal = ({ question, onClose }) => {
         />
       )}
        {/* Place your CreateQuestionModal here */}
-      {showCreateModal && (
-        <CreateQuestionModal
-          onClose={() => setShowCreateModal(false)}
-          onSelectType={(type) => {
-        console.log('Selected type:', type);
-            setShowCreateModal(false);
-            if (type.name === 'True/False') {
-        setShowTrueFalseModal(true);
-      }
-            // alert(`Selected question type: ${type.name}`);
-            // Optionally, open another modal or set up state for question creation
-          }}
-          questions={questions}
-        />
-      )}
+    {showCreateModal && (
+  <CreateQuestionModal
+    onClose={() => setShowCreateModal(false)}
+    onSelectType={(type) => {
+      setShowCreateModal(false);
+      if (type.name === 'True/False') setShowTrueFalseModal(true);
+      if (type.name === 'Multiple choice') setShowMultipleChoiceModal(true);
+    }}
+    questions={questions}
+  />
+)}
 
       {/*  for True/False workflow */}
   {showTrueFalseModal && (
@@ -1457,7 +1521,62 @@ const PreviewModal = ({ question, onClose }) => {
     }}
   />
 )}
-
+{showMultipleChoiceModal && (
+  <CreateMultipleChoiceQuestion
+    onClose={() => setShowMultipleChoiceModal(false)}
+  
+           onSave={(questionData) => {
+        setShowMultipleChoiceModal(false);
+        const choices = Array.isArray(questionData.choices) ? questionData.choices : [];
+        const options = choices.map(a => a.text);
+        const correctAnswers = choices
+          .filter(a => a.grade === 100)
+          .map(a => a.text);
+      
+        const safeQuestion = {
+          ...questionData,
+          title: questionData.title || 'Untitled',
+          questionText: questionData.questionText || '',
+          defaultMark: questionData.defaultMark ?? 1,
+          generalFeedback: questionData.generalFeedback || '',
+          options,
+          correctAnswers,
+          status: 'draft'
+        };
+        setQuestions(prev => [
+          {
+            id: prev.length > 0 ? Math.max(...prev.map(q => q.id)) + 1 : 1,
+            questionType: "multiple",
+            version: "v1",
+            createdBy: {
+              name: "Current User",
+              role: "",
+              date: new Date().toLocaleString()
+            },
+            modifiedBy: {
+              name: "Current User",
+              role: "",
+              date: new Date().toLocaleString()
+            },
+            comments: 0,
+            usage: 0,
+            lastUsed: "Never",
+            history: [
+              {
+                version: "v1",
+                date: new Date().toLocaleDateString(),
+                author: "Current User",
+                changes: "Created Multiple Choice question"
+              }
+            ],
+            status: "draft",
+            ...safeQuestion
+          },
+          ...prev // Add new question at the top
+        ]);
+      }}
+  />
+)}
     </div>
   );
 };
