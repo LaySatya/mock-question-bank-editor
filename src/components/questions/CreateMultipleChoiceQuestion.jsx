@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
 
 const defaultChoices = [
@@ -9,7 +9,111 @@ const defaultChoices = [
 ];
 
 const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSave, isBulk }) => {
+  
   const questionsToEdit = questions || (question ? [question] : []);
+const TagDropdown = ({ tags, onTagToggle, isOpen, onToggle, error, availableTags }) => {
+  const dropdownRef = useRef();
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onToggle(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onToggle]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div
+        onClick={() => onToggle(true)}
+        className={`w-full px-3 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md cursor-pointer bg-white flex items-center justify-between min-h-[42px]`}
+      >
+        <div className="flex flex-wrap gap-1">
+          {tags.length > 0 ? (
+            tags.map(tag => (
+              <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {tag}
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); onTagToggle(tag); }}
+                  className="ml-1 text-blue-600 hover:text-blue-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-500">Select tags...</span>
+          )}
+        </div>
+        <span className="ml-2">▼</span>
+      </div>
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+          {availableTags.map(tag => (
+            <div
+              key={tag}
+              onClick={() => onTagToggle(tag)}
+              className={`px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center justify-between ${
+                tags.includes(tag) ? 'bg-blue-50 text-blue-700' : ''
+              }`}
+            >
+              <span>{tag}</span>
+              {tags.includes(tag) && <span className="text-blue-600">✓</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const availableTags = [
+  // Difficulty
+  'easy', 'medium', 'hard',
+  // Core IT Subjects
+  'programming', 'algorithms', 'data structures', 'databases', 'networking', 'operating systems',
+  'web development', 'software engineering', 'security', 'ai', 'machine learning',
+  // Languages/Technologies
+  'python', 'java', 'c++', 'javascript', 'html', 'css', 'sql',
+  // Assessment context
+  'quiz', 'exam', 'assignment', 'practice', 'lab', 'project',
+  // Status
+  'draft', 'review', 'approved', 'archived'
+];
+    const [tags, setTags] = useState(question.tags || []);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  
+  const [bulkTagDropdowns, setBulkTagDropdowns] = useState({});
+  const handleTagToggle = (tag) => {
+  setTags(prev =>
+    prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+  );
+};
+
+const toggleBulkTagDropdown = (idx) => {
+  setBulkTagDropdowns(prev => ({
+    ...prev,
+    [idx]: !prev[idx]
+  }));
+};
+
+const handleBulkTagToggle = (idx, tag) => {
+  setBulkQuestions(prev =>
+    prev.map((q, i) =>
+      i === idx
+        ? {
+            ...q,
+            tags: q.tags && q.tags.includes(tag)
+              ? q.tags.filter(t => t !== tag)
+              : [...(q.tags || []), tag]
+          }
+        : q
+    )
+  );
+};
 
   // Bulk edit state
   const [bulkQuestions, setBulkQuestions] = useState(
@@ -28,7 +132,18 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
         }))
       : []
   );
-
+    useEffect(() => {
+      setTitle(question.title || '');
+      setQuestionText(question.questionText || '');
+      setDefaultMark(question.defaultMark ?? 1);
+      setPenaltyFactor(question.penaltyFactor ?? 0.1);
+      setGeneralFeedback(question.generalFeedback || '');
+      setMultipleAnswers(question.multipleAnswers ?? false);
+      setShuffleAnswers(question.shuffleAnswers ?? true);
+      setShowInstructions(question.showInstructions ?? true);
+      setChoices(question.choices && question.choices.length > 0 ? question.choices : defaultChoices);
+      setErrors({});
+    }, [question.id, isBulk]); 
   // Single edit state
   const [title, setTitle] = useState(question.title || '');
   const [questionText, setQuestionText] = useState(question.questionText || '');
@@ -116,16 +231,17 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
     const newErrors = {};
     if (!title.trim()) newErrors.title = 'Question name is required';
     if (!questionText.trim()) newErrors.questionText = 'Question text is required';
-
+    if (!tags || tags.length === 0) newErrors.tags = 'At least one tag is required';
+  
     // Per-choice validation
     const choiceErrors = choices.map((choice, idx) => {
       if (!choice.text.trim()) return 'Choice text is required';
       return null;
     });
     if (choiceErrors.some(Boolean)) newErrors.choices = choiceErrors;
-
+  
     if (!choices.some(choice => choice.grade > 0)) newErrors.grade = 'At least one choice must have a positive grade';
-
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -142,7 +258,8 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
       multipleAnswers,
       shuffleAnswers,
       showInstructions,
-      choices
+      choices,
+      tags
     };
     if (typeof onSave === 'function') {
       onSave(questionData);
@@ -151,6 +268,7 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
       onClose();
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-60">
@@ -177,7 +295,7 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                   {/* Question Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Question name*
+                      Question name* <span className="text-red-500">Required</span>
                     </label>
                     <input
                       type="text"
@@ -190,8 +308,26 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                   {/* Question Text */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Question text*
+                      Question text* <span className="text-red-500">Required</span>
                     </label>
+                    <div className="border border-gray-300 rounded-md">
+                    {/* Toolbar */}
+                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
+                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
+                      </button>
+                    </div>
                     <textarea
                       className="w-full px-3 py-2 border rounded-md min-h-[120px]"
                       value={q.questionText}
@@ -199,6 +335,18 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                       placeholder="Enter the question text here..."
                     />
                   </div>
+                  </div>
+                <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tags/Level*  <span className="text-red-500">Required</span></label>
+              <TagDropdown
+                tags={q.tags || []}
+                onTagToggle={tag => handleBulkTagToggle(idx, tag)}
+                isOpen={!!bulkTagDropdowns[idx]}
+                onToggle={() => toggleBulkTagDropdown(idx)}
+                availableTags={availableTags}
+                error={!!(errors.bulkTags && errors.bulkTags[idx])}
+              />
+              </div>
                   {/* Default Mark and Penalty Factor */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -234,12 +382,31 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       General feedback
                     </label>
+                    <div className="border border-gray-300 rounded-md">
+                    {/* Toolbar */}
+                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
+                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
+                      </button>
+                    </div>
                     <textarea
                       className="w-full px-3 py-2 border rounded-md min-h-[80px]"
                       value={q.generalFeedback}
                       onChange={e => handleBulkChange(idx, 'generalFeedback', e.target.value)}
                       placeholder="Optional feedback shown to all students after they answer"
                     />
+                  </div>
                   </div>
                   {/* Question Options */}
                   <div className="space-y-4">
@@ -313,14 +480,33 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                              Answer text
+                              Answer text  <span className="text-red-500">Required</span>
                             </label>
+                            <div className="border border-gray-300 rounded-md">
+                    {/* Toolbar */}
+                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
+                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
+                      </button>
+                    </div>
                             <textarea
                               className="w-full px-3 py-2 border rounded-md min-h-[60px]"
                               value={choice.text}
                               onChange={e => handleBulkChoiceChange(idx, cIdx, 'text', e.target.value)}
                               placeholder={`Enter choice ${cIdx + 1} text...`}
                             />
+                          </div>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -382,7 +568,7 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                 {/* ...keep your current single-question form here... */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Question name*
+                    Question name* <span className="text-red-500">Required</span>
                   </label>
                   <input
                     type="text"
@@ -399,8 +585,26 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Question text*
+                    Question text* <span className="text-red-500">Required</span>
                   </label>
+                  <div className="border border-gray-300 rounded-md">
+                    {/* Toolbar */}
+                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
+                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
+                      </button>
+                    </div>
                   <textarea
                     className={`w-full px-3 py-2 border rounded-md min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                       errors.questionText ? 'border-red-500' : 'border-gray-300'
@@ -411,6 +615,24 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                   />
                   {errors.questionText && (
                     <div className="text-red-600 text-xs mt-1">{errors.questionText}</div>
+                  )}
+                </div>
+                </div>
+                    {/* tag/level */}
+                 <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags/Level* <span className="text-red-500">Required</span>
+                  </label>
+                  <TagDropdown
+                    tags={tags}
+                    onTagToggle={handleTagToggle}
+                    isOpen={tagDropdownOpen}
+                    onToggle={() => setTagDropdownOpen(open => !open)}
+                    availableTags={availableTags}
+                    error={!!errors.tags}
+                  />
+                  {errors.tags && (
+                    <div className="text-red-600 text-xs mt-1">{errors.tags}</div>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -446,12 +668,31 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     General feedback
                   </label>
+                  <div className="border border-gray-300 rounded-md">
+                    {/* Toolbar */}
+                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
+                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
+                      </button>
+                    </div>
                   <textarea
                     className="w-full px-3 py-2 border border-gray-300 rounded-md min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={generalFeedback}
                     onChange={e => setGeneralFeedback(e.target.value)}
                     placeholder="Optional feedback shown to all students after they answer"
                   />
+                </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-6">
@@ -523,8 +764,26 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-600 mb-1">
-                            Answer text
+                            Answer text  <span className="text-red-500">Required</span>
                           </label>
+                          <div className="border border-gray-300 rounded-md">
+                    {/* Toolbar */}
+                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
+                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
+                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
+                      </button>
+                    </div>
                           <textarea
                             className={`w-full px-3 py-2 border rounded-md min-h-[60px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                               errors.choices && errors.choices[index] ? 'border-red-500' : 'border-gray-300'
@@ -536,6 +795,7 @@ const CreateMultipleChoiceQuestion = ({ question = {}, questions, onClose, onSav
                           {errors.choices && errors.choices[index] && (
                             <div className="text-red-600 text-xs mt-1">{errors.choices[index]}</div>
                           )}
+                        </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-600 mb-1">

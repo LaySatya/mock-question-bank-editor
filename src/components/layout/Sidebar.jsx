@@ -33,13 +33,13 @@ const Sidebar = ({ collapsed }) => {
         {collapsed ? (
           <div className="w-full flex justify-center">
             <div className="h-8 w-8 rounded-md bg-white flex items-center justify-center">
-              <span className="text-indigo-800 font-bold text-lg">Q</span>
+              <span className="text-indigo-800 font-bold text-lg">ROT</span>
             </div>
           </div>
         ) : (
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-md bg-white flex items-center justify-center mr-2">
-              <span className="text-blue-800 font-bold text-lg">Q</span>
+              <span className="text-blue-800 font-bold text-lg">ROT</span>
             </div>
             <span className="font-bold text-lg">Rean Ot lv </span>
           </div>

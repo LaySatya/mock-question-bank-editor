@@ -3,7 +3,7 @@ import {
   Search, MoreHorizontal, Edit, Trash2, Eye, Mail, CheckCircle,
   XCircle, Download, Upload, UserPlus, Shield, User
 } from 'lucide-react';
-import { useAuth } from '@clerk/clerk-react';
+
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,61 +15,43 @@ const ManageUsers = () => {
     department: 'All'
   });
   const dropdownRef = useRef(null);
-const { getToken, isLoaded, isSignedIn } = useAuth();
 
-
-
-// Add this useEffect to log the Clerk token
-useEffect(() => {
-  async function fetchToken() {
-    const token = await getToken();
-    console.log('Clerk token:', token);
-  }
-  fetchToken();
-}, [getToken]);
-
-    const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  {loading && <div className="text-blue-600 mb-4">Loading users...</div>}
-{error && <div className="text-red-600 mb-4">{error}</div>}
+
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-    async function fetchUsers() {
-      setLoading(true);
-      setError(null);
-      const token = await getToken();
-      if (!token) {
-        setError('No Clerk token found');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Not authenticated');
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    fetch('/api/users', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data)) {
+          setUsers([]);
+          setError('API did not return an array');
+        } else {
+          setUsers(data);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
         setUsers([]);
         setLoading(false);
-        return;
-      }
-      fetch('/api/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-           console.log('Fetched users:', data);
-          if (!Array.isArray(data)) {
-            setUsers([]);
-            setError('API did not return an array');
-          } else {
-             setUsers(data);
-            //setUsers(data.map(/* ...mapping... */));
-          }
-          setLoading(false);
-        })
-        .catch(err => {
-          setError(err.message);
-          setUsers([]);
-          setLoading(false);
-        });
-    }
-    fetchUsers();
-  }, [getToken, isLoaded, isSignedIn]);
+      });
+  }, []);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -250,6 +232,10 @@ useEffect(() => {
           </select>
         </div>
       </div>
+
+      {/* Loading and Error */}
+      {loading && <div className="text-blue-600 mb-4">Loading users...</div>}
+      {error && <div className="text-red-600 mb-4">{error}</div>}
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">

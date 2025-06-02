@@ -10,7 +10,27 @@ import CreateMultipleChoiceQuestion from '../components/questions/CreateMultiple
 import BulkEditQuestionsModal from '../components/modals/BulkEditQuestionsModal';
 
 
+
+
 const QuestionBank = () => {
+
+  //use for filter tags 
+  const [tagFilter, setTagFilter] = useState('All');
+
+const dropdownRefs = useRef({});
+const questionsDropdownRef = useRef(null);
+  //user come from clerk 
+// const { isLoaded, user } = useUser();
+const [username, setUsername] = useState(localStorage.getItem('username') || "Unknown User");
+
+useEffect(() => {
+  // Listen for changes to localStorage (e.g., login/logout in another tab)
+  const handleStorage = () => {
+    setUsername(localStorage.getItem('username') || "Unknown User");
+  };
+  window.addEventListener('storage', handleStorage);
+  return () => window.removeEventListener('storage', handleStorage);
+}, []);
 //use for edit multiple questions
 const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
@@ -185,299 +205,196 @@ const importQuestionFromXML = (xmlString) => {
 };
   // Mock data for questions
   const [questions, setQuestions] = useState([
-    {
-      id: 1,
-      title: "Diversity support",
-      status: "ready",
-      version: "v4",
-      createdBy: {
-        name: "Ms Reddy",
-        role: "(Admin)",
-        date: "14 November 2022, 9:37 AM"
-      },
-      comments: 2,
-      usage: 1,
-      lastUsed: "Tuesday, 15 November 2022, 8:25 AM",
-      modifiedBy: {
-        name: "Ms Reddy",
-        role: "(Admin)",
-        date: "14 November 2022, 9:37 AM"
-      },
-      questionType: "multiple",
-      history: [
-        { version: "v1", date: "10 November 2022", author: "Ms Reddy", changes: "Initial creation" },
-        { version: "v2", date: "12 November 2022", author: "Ms Reddy", changes: "Added options" },
-        { version: "v3", date: "13 November 2022", author: "Ms Reddy", changes: "Fixed formatting" },
-        { version: "v4", date: "14 November 2022", author: "Ms Reddy", changes: "Final review" }
-      ]
-    },
-    {
-      id: 2,
-      title: "Match the outcomes",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:34 AM"
-      },
-      comments: 1,
-      usage: 1,
-      lastUsed: "Tuesday, 15 November 2022, 8:25 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:34 AM"
-      },
-      questionType: "matching",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    },
-    {
-      id: 3,
-      title: "British",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:43 AM"
-      },
-      comments: 1,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:43 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    },
-    {
-      id: 4,
-      title: "Church",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:54 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:54 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    },
-    {
-      id: 5,
-      title: "Define diversity",
-      status: "ready",
-      version: "v2",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:30 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Tuesday, 15 November 2022, 8:25 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:30 AM"
-      },
-      questionType: "shortanswer",
-      history: [
-        { version: "v1", date: "7 November 2022", author: "Mr C Wilson", changes: "Initial creation" },
-        { version: "v2", date: "8 November 2022", author: "Mr C Wilson", changes: "Updated question wording" }
-      ]
-    },
-    {
-      id: 6,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    }, {
-      id: 7,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    },
-     {
-      id: 8,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    } ,{
-      id: 9,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    },
-     {
-      id: 10,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    }, {
-      id: 11,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    } ,{
-      id: 12,
-      title: "Japan",
-      status: "ready",
-      version: "v1",
-      createdBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      comments: 0,
-      usage: 1,
-      lastUsed: "Monday, 14 November 2022, 9:41 AM",
-      modifiedBy: {
-        name: "Mr C Wilson",
-        role: "",
-        date: "8 November 2022, 11:45 AM"
-      },
-      questionType: "essay",
-      history: [
-        { version: "v1", date: "8 November 2022", author: "Mr C Wilson", changes: "Initial creation" }
-      ]
-    }
-  ]);
 
+   
+{
+  id: 101,
+  title: "What is the time complexity of binary search?",
+  questionText: "Select the correct time complexity for the binary search algorithm.",
+  questionType: "multiple",
+  options: [
+    "O(n)",
+    "O(log n)",
+    "O(n log n)",
+    "O(1)"
+  ],
+  correctAnswers: ["O(log n)"],
+  tags: ["algorithms", "programming", "easy"],
+  status: "ready",
+  version: "v1",
+  createdBy: { name: "Ms Smith", role: "Teacher", date: "2 June 2025, 10:00 AM" },
+  comments: 0,
+  usage: 0,
+  lastUsed: "Never",
+  modifiedBy: { name: "Ms Smith", role: "Teacher", date: "2 June 2025, 10:00 AM" },
+  history: [
+    { version: "v1", date: "2 June 2025", author: "Ms Smith", changes: "Initial creation" }
+  ]
+},
+{
+  id: 102,
+  title: "Which language is used for web development?",
+  questionText: "Choose all languages commonly used for web development.",
+  questionType: "multiple",
+  options: [
+    "Python",
+    "HTML",
+    "CSS",
+    "C++"
+  ],
+  correctAnswers: ["HTML", "CSS"],
+  tags: ["web development", "html", "css", "quiz", "easy"],
+  status: "ready",
+  version: "v1",
+  createdBy: { name: "Mr John", role: "Teacher", date: "2 June 2025, 11:00 AM" },
+  comments: 0,
+  usage: 0,
+  lastUsed: "Never",
+  modifiedBy: { name: "Mr John", role: "Teacher", date: "2 June 2025, 11:00 AM" },
+  history: [
+    { version: "v1", date: "2 June 2025", author: "Mr John", changes: "Initial creation" }
+  ]
+},
+{
+  id: 103,
+  title: "What does SQL stand for?",
+  questionText: "Select the correct full form of SQL.",
+  questionType: "multiple",
+  options: [
+    "Structured Query Language",
+    "Simple Query Language",
+    "Sequential Query Language",
+    "Standard Query Language"
+  ],
+  correctAnswers: ["Structured Query Language"],
+  tags: ["sql", "databases", "medium", "exam"],
+  status: "ready",
+  version: "v1",
+  createdBy: { name: "Ms Lee", role: "Teacher", date: "2 June 2025, 12:00 PM" },
+  comments: 0,
+  usage: 0,
+  lastUsed: "Never",
+  modifiedBy: { name: "Ms Lee", role: "Teacher", date: "2 June 2025, 12:00 PM" },
+  history: [
+    { version: "v1", date: "2 June 2025", author: "Ms Lee", changes: "Initial creation" }
+  ]
+},
+
+{
+  id: 104,
+  title: "Which protocol is used to securely transfer files over the Internet?",
+  questionText: "Select the protocol that provides secure file transfer.",
+  questionType: "multiple",
+  options: [
+    "FTP",
+    "SFTP",
+    "HTTP",
+    "SMTP"
+  ],
+  correctAnswers: ["SFTP"],
+  tags: ["networking", "security", "medium", "exam"],
+  status: "ready",
+  version: "v1",
+  createdBy: { name: "Ms Kim", role: "Teacher", date: "2 June 2025, 1:00 PM" },
+  comments: 0,
+  usage: 0,
+  lastUsed: "Never",
+  modifiedBy: { name: "Ms Kim", role: "Teacher", date: "2 June 2025, 1:00 PM" },
+  history: [
+    { version: "v1", date: "2 June 2025", author: "Ms Kim", changes: "Initial creation" }
+  ]
+},
+{
+  id: 105,
+  title: "Which of the following is a Python data structure?",
+  questionText: "Choose all correct Python data structures.",
+  questionType: "multiple",
+  options: [
+    "List",
+    "Tuple",
+    "ArrayList",
+    "Dictionary"
+  ],
+  correctAnswers: ["List", "Tuple", "Dictionary"],
+  tags: ["python", "data structures", "quiz", "easy"],
+  status: "ready",
+  version: "v1",
+  createdBy: { name: "Mr John", role: "Teacher", date: "2 June 2025, 1:10 PM" },
+  comments: 0,
+  usage: 0,
+  lastUsed: "Never",
+  modifiedBy: { name: "Mr John", role: "Teacher", date: "2 June 2025, 1:10 PM" },
+  history: [
+    { version: "v1", date: "2 June 2025", author: "Mr John", changes: "Initial creation" }
+  ]
+},
+{
+  id: 106,
+  title: "What is the main purpose of an operating system?",
+  questionText: "Select the primary function of an operating system.",
+  questionType: "multiple",
+  options: [
+    "Manage hardware resources",
+    "Compile source code",
+    "Design web pages",
+    "Send emails"
+  ],
+  correctAnswers: ["Manage hardware resources"],
+  tags: ["operating systems", "core", "medium", "assignment"],
+  status: "ready",
+  version: "v1",
+  createdBy: { name: "Ms Lee", role: "Teacher", date: "2 June 2025, 1:20 PM" },
+  comments: 0,
+  usage: 0,
+  lastUsed: "Never",
+  modifiedBy: { name: "Ms Lee", role: "Teacher", date: "2 June 2025, 1:20 PM" },
+  history: [
+    { version: "v1", date: "2 June 2025", author: "Ms Lee", changes: "Initial creation" }
+  ]
+},
+
+  ]);
+ const allTags = Array.from(
+    new Set(
+      questions
+        .flatMap(q => Array.isArray(q.tags) ? q.tags : [])
+        .filter(Boolean)
+    )
+  );
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      // Action dropdown
+      if (
+        openActionDropdown &&
+        dropdownRefs.current[openActionDropdown] &&
+        !dropdownRefs.current[openActionDropdown].contains(event.target)
+      ) {
         setOpenActionDropdown(null);
+      }
+      // Status dropdown
+      if (
+        openStatusDropdown &&
+        dropdownRefs.current[openStatusDropdown] &&
+        !dropdownRefs.current[openStatusDropdown].contains(event.target)
+      ) {
         setOpenStatusDropdown(null);
       }
+      // Top "Questions" dropdown
+      if (
+        showQuestionsDropdown &&
+        questionsDropdownRef.current &&
+        !questionsDropdownRef.current.contains(event.target)
+      ) {
+        setShowQuestionsDropdown(false);
+      }
     }
-    
+  
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
-
+  }, [openActionDropdown, openStatusDropdown, showQuestionsDropdown]);
   // Toggle individual question selection
   const toggleQuestionSelection = (id) => {
     setSelectedQuestions(prev => 
@@ -548,7 +465,7 @@ const importQuestionFromXML = (xmlString) => {
                     month: 'long',
                     year: 'numeric'
                   }),
-                  author: "Current User",
+                  author: username || "Unknown User",
                   changes: `Changed status to ${newStatus}`
                 }
               ]
@@ -568,7 +485,7 @@ const importQuestionFromXML = (xmlString) => {
       version: 'v1',
       status: 'draft',
       createdBy: {
-        name: "Current User",
+        name: username || "Unknown User",
         role: "",
         date: new Date().toLocaleString('en-US', {
           day: 'numeric',
@@ -580,7 +497,7 @@ const importQuestionFromXML = (xmlString) => {
         })
       },
       modifiedBy: {
-        name: "Current User",
+        name: username || "Unknown User",
         role: "",
         date: new Date().toLocaleString('en-US', {
           day: 'numeric',
@@ -599,7 +516,7 @@ const importQuestionFromXML = (xmlString) => {
             month: 'long',
             year: 'numeric'
           }),
-          author: "Current User",
+          author: username || "Unknown User",
           changes: "Duplicated from original question"
         }
       ],
@@ -608,7 +525,7 @@ const importQuestionFromXML = (xmlString) => {
       lastUsed: "Never"
     };
     
-    setQuestions(prev => [newQuestion, ...prev]);
+        setQuestions(prev => [...prev, newQuestion]);
     setOpenActionDropdown(null);
   };
 
@@ -659,7 +576,7 @@ const confirmSave = (questionId) => {
                   month: 'long',
                   year: 'numeric'
                 }),
-                author: "Current User",
+                author: username || "Unknown User",
                 changes: "Updated question title"
               }
             ]
@@ -865,11 +782,12 @@ const PreviewModal = ({ question, onClose }) => {
     </div>
   );
 };
- const filteredQuestions = questions.filter(q =>
-    q.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+const filteredQuestions = questions.filter(q =>
+  q.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
   (filters.type === 'All' || q.questionType === filters.type) &&
-  (filters.status === 'All' || q.status === filters.status)
-  );
+  (filters.status === 'All' || q.status === filters.status) &&
+  (tagFilter === 'All' || (Array.isArray(q.tags) && q.tags.includes(tagFilter)))
+);
   const paginatedQuestions = filteredQuestions.slice(startIdx, endIdx);
   return (
     <div className="max-w-full">
@@ -877,7 +795,7 @@ const PreviewModal = ({ question, onClose }) => {
       <div className="p-4 flex flex-wrap gap-2 items-center">
 
           {/* Questions dropdown */}
-  <div className="relative">
+  <div className="relative" ref={questionsDropdownRef}>
     <button 
       className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded flex items-center"
       onClick={() => setShowQuestionsDropdown(!showQuestionsDropdown)}
@@ -886,7 +804,7 @@ const PreviewModal = ({ question, onClose }) => {
     </button>
     
     {showQuestionsDropdown && (
-      <div className="absolute left-0 mt-1 w-48 bg-gray-700 rounded shadow-lg z-10">
+      <div className="absolute left-0 mt-1 w-48 bg-gray-500 rounded shadow-lg z-10 border border-gray-500">
         <button className="flex items-center w-full px-4 py-2 text-sm text-left text-white hover:bg-gray-600">
           <Check size={16} className="mr-2" /> Questions
         </button>
@@ -1044,9 +962,17 @@ const PreviewModal = ({ question, onClose }) => {
           <option value="shortanswer">Short Answer</option>
         </select>
         
-        <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
-          Apply Filters
-        </button>
+       
+        <select
+  className="border rounded py-2 px-3"
+  value={tagFilter}
+  onChange={e => setTagFilter(e.target.value)}
+>
+  <option value="All">All Tags</option>
+  {allTags.map(tag => (
+    <option key={tag} value={tag}>{tag}</option>
+  ))}
+</select>
       </div>
 
       <div className="overflow-x-auto" ref={dropdownRef}>
@@ -1126,7 +1052,7 @@ const PreviewModal = ({ question, onClose }) => {
                 <td className="border-b px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-center text-2xl">{getQuestionTypeIcon(question.questionType)}</span>
-                    <div className="relative">
+                    <div className="relative" ref={el => dropdownRefs.current[question.id] = el}>
                       <button 
                         className="text-blue-500 hover:underline flex items-center"
                         onClick={() => setOpenActionDropdown(openActionDropdown === question.id ? null : question.id)}
@@ -1188,7 +1114,7 @@ const PreviewModal = ({ question, onClose }) => {
                 </td>
                             <td className="border-b px-4 py-3 ">
                 {showQuestionText && (
-                  editingQuestion === question.id ? (
+                                 editingQuestion === question.id ? (
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
@@ -1204,18 +1130,33 @@ const PreviewModal = ({ question, onClose }) => {
                       />
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1">
-                      <span>{question.title}</span>
-                      <button 
-                        className="text-gray-700"
+                    <div>
+                      <button
+                        className="flex items-center gap-1 text-left w-full bg-transparent border-0 p-0 hover:underline focus:outline-none"
                         onClick={() => startEditingTitle(question)}
+                        style={{ cursor: 'pointer' }}
+                        tabIndex={0}
                       >
-                        <Edit size={14} />
+                        <span>{question.title}</span>
+                        <Edit size={14} className="text-gray-700" />
                       </button>
+                      {/* Show tags after the title */}
+                      {Array.isArray(question.tags) && question.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {question.tags.map(tag => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
-                )}
-              </td>
+              )}
+            </td>
                 <td className="border-b px-4 py-3">
                   <div className="relative">
                     <button 
@@ -1325,7 +1266,7 @@ const PreviewModal = ({ question, onClose }) => {
       <BulkEditComponent
         questions={questionsToEdit}
         onClose={() => setShowBulkEditModal(false)}
-        onSave={updatedQuestions => {
+               onSave={updatedQuestions => {
           setQuestions(prev =>
             prev.map(q => {
               const edited = updatedQuestions.find(uq => uq.id === q.id);
@@ -1343,7 +1284,7 @@ const PreviewModal = ({ question, onClose }) => {
                       {
                         version: `v${parseInt(q.version.substring(1)) + 1}`,
                         date: new Date().toLocaleDateString(),
-                        author: "Current User",
+                        author: username || "Unknown User",
                         changes: "Bulk edited"
                       }
                     ]
@@ -1381,7 +1322,7 @@ const PreviewModal = ({ question, onClose }) => {
                       {
                         version: `v${parseInt(q.version.substring(1)) + 1}`,
                         date: new Date().toLocaleDateString(),
-                        author: "Current User",
+                        author: username || "Unknown User",
                         changes: "Bulk edited"
                       }
                     ]
@@ -1422,7 +1363,7 @@ const PreviewModal = ({ question, onClose }) => {
                   {
                     version: `v${parseInt(q.version.substring(1)) + 1}`,
                     date: new Date().toLocaleDateString(),
-                    author: "Current User",
+                    author: username || "Unknown User",
                     changes: "Edited question"
                   }
                 ]
@@ -1493,12 +1434,12 @@ const PreviewModal = ({ question, onClose }) => {
           questionType: "truefalse",
           version: "v1",
           createdBy: {
-            name: "Current User",
+            name: username || "Unknown User",
             role: "",
             date: new Date().toLocaleString()
           },
           modifiedBy: {
-            name: "Current User",
+            name: username || "Unknown User",
             role: "",
             date: new Date().toLocaleString()
           },
@@ -1509,14 +1450,14 @@ const PreviewModal = ({ question, onClose }) => {
             {
               version: "v1",
               date: new Date().toLocaleDateString(),
-              author: "Current User",
+              author: username || "Unknown User",
               changes: "Created True/False question"
             }
           ],
           status: "draft",
           ...safeQuestion
         },
-        ...prev // <--change  this to get question add new question stay at the top
+        ...prev 
       ]);
     }}
   />
@@ -1549,12 +1490,12 @@ const PreviewModal = ({ question, onClose }) => {
             questionType: "multiple",
             version: "v1",
             createdBy: {
-              name: "Current User",
+              name: username || "Unknown User",
               role: "",
               date: new Date().toLocaleString()
             },
             modifiedBy: {
-              name: "Current User",
+              name: username || "Unknown User",
               role: "",
               date: new Date().toLocaleString()
             },
@@ -1565,7 +1506,7 @@ const PreviewModal = ({ question, onClose }) => {
               {
                 version: "v1",
                 date: new Date().toLocaleDateString(),
-                author: "Current User",
+                author: username || "Unknown User",
                 changes: "Created Multiple Choice question"
               }
             ],
