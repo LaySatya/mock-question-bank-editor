@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
-import QuestionBank from './pages/QuestionBank';
+import QuestionBank from './pages/QuestionBank/QuestionBank';
 import ManageUsers from './pages/ManageUsers';
 import LoginPage from './pages/LoginPage';
 import { logoutUser } from './api/userapi';
@@ -31,7 +31,7 @@ const App = () => {
     localStorage.setItem('username', username);
     setIsAuthenticated(true);
     setCurrentUser({ token, username });
-    navigate('/question-bank');
+    navigate('/question-bank'); // ✅ FIXED: Now matches your route
   };
 
   const handleLogout = async () => {

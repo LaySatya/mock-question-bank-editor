@@ -1,702 +1,615 @@
+// components/questions/CreateTrueFalseQuestion.jsx
 import React, { useState, useEffect } from 'react';
-import { X, Save, ChevronDown } from 'lucide-react';
+import { X, Save, ChevronDown, AlertCircle, HelpCircle } from 'lucide-react';
+import { useTrueFalseForm } from './hooks/useTrueFalseForm';
+import { useBulkTrueFalseEdit } from './hooks/useBulkTrueFalseEdit';
+import { TagDropdown, TextEditor, FormField, NumberInput, RadioGroup, Checkbox, Select } from './components/SharedComponents';
+import { AVAILABLE_TAGS } from './constants/questionConstants';
 
-
-const CreateTrueFalseQuestion = ({ onClose, onSave, existingQuestion = null, questions, isBulk }) => {
- 
+const CreateTrueFalseQuestion = ({ 
+  onClose, 
+  onSave, 
+  existingQuestion = null, 
+  questions, 
+  isBulk 
+}) => {
   const questionsToEdit = questions || (existingQuestion ? [existingQuestion] : []);
-  
-const availableTags = [
-  // Difficulty
-  'easy', 'medium', 'hard',
 
-  // Core IT Subjects
-  'programming', 'algorithms', 'data structures', 'databases', 'networking', 'operating systems',
-  'web development', 'software engineering', 'security', 'ai', 'machine learning',
+  // Single question form logic
+  const {
+    question,
+    errors,
+    updateField,
+    handleTagToggle,
+    validate,
+    resetForm
+  } = useTrueFalseForm(existingQuestion);
 
-  // Languages/Technologies
-  'python', 'java', 'c++', 'javascript', 'html', 'css', 'sql',
+  // Bulk edit logic
+  const {
+    bulkQuestions,
+    bulkTagDropdowns,
+    handleBulkChange,
+    handleBulkTagToggle,
+    toggleBulkTagDropdown
+  } = useBulkTrueFalseEdit(questionsToEdit, isBulk);
 
-  // Assessment context
-  'quiz', 'exam', 'assignment', 'practice', 'lab', 'project',
-
-  // Status
-  'draft', 'review', 'approved', 'archived'
-];
-
-  // Single edit state
-  const [question, setQuestion] = useState({
-    title: existingQuestion?.title || '',
-    questionText: existingQuestion?.questionText || '',
-    defaultMark: existingQuestion?.defaultMark || 1,
-    generalFeedback: existingQuestion?.generalFeedback || '',
-    correctAnswer: existingQuestion?.correctAnswer || 'true',
-    penalty: existingQuestion?.penalty || 0,
-    showInstructions: existingQuestion?.showInstructions || false,
-    feedbackTrue: existingQuestion?.feedbackTrue || '',
-    feedbackFalse: existingQuestion?.feedbackFalse || '',
-    status: existingQuestion?.status || 'draft',
-    tags: existingQuestion?.tags || []
-  });
-
-  // Reset form when editing a different question
-  useEffect(() => {
-    setQuestion({
-      title: existingQuestion?.title || '',
-      questionText: existingQuestion?.questionText || '',
-      defaultMark: existingQuestion?.defaultMark || 1,
-      generalFeedback: existingQuestion?.generalFeedback || '',
-      correctAnswer: existingQuestion?.correctAnswer || 'true',
-      penalty: existingQuestion?.penalty || 0,
-      showInstructions: existingQuestion?.showInstructions || false,
-      feedbackTrue: existingQuestion?.feedbackTrue || '',
-      feedbackFalse: existingQuestion?.feedbackFalse || '',
-      status: existingQuestion?.status || 'draft',
-      tags: existingQuestion?.tags || []
-    });
-    setErrors({});
-  }, [existingQuestion]);
-
-  // Bulk edit state
-  const [bulkQuestions, setBulkQuestions] = useState(
-    isBulk
-      ? questionsToEdit.map(q => ({
-          ...q,
-          title: q.title || '',
-          questionText: q.questionText || '',
-          defaultMark: q.defaultMark || 1,
-          generalFeedback: q.generalFeedback || '',
-          correctAnswer: q.correctAnswer || 'true',
-          penalty: q.penalty || 0,
-          showInstructions: q.showInstructions || false,
-          feedbackTrue: q.feedbackTrue || '',
-          feedbackFalse: q.feedbackFalse || '',
-          status: q.status || 'draft',
-          tags: q.tags || []
-        }))
-      : []
-  );
-  
-  const [errors, setErrors] = useState({});
   const [showTagDropdown, setShowTagDropdown] = useState(false);
-  const [bulkTagDropdowns, setBulkTagDropdowns] = useState({});
+  const [expandedSections, setExpandedSections] = useState({
+    general: true,
+    multipleTries: false,
+    tags: true
+  });
+  const [allExpanded, setAllExpanded] = useState(false);
 
-  // Handle tag selection for single question
-  const handleTagToggle = (tag) => {
-    setQuestion(prev => ({
+  // Reset form when question changes
+  useEffect(() => {
+    resetForm(existingQuestion);
+  }, [existingQuestion, resetForm]);
+
+  // Toggle section expansion
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
       ...prev,
-      tags: prev.tags.includes(tag) 
-        ? prev.tags.filter(t => t !== tag)
-        : [...prev.tags, tag]
+      [section]: !prev[section]
     }));
   };
 
-  // Handle tag selection for bulk questions
-  const handleBulkTagToggle = (idx, tag) => {
-    setBulkQuestions(prev =>
-      prev.map((q, i) =>
-        i === idx ? {
-          ...q,
-          tags: q.tags.includes(tag) 
-            ? q.tags.filter(t => t !== tag)
-            : [...q.tags, tag]
-        } : q
-      )
-    );
+  // Handle expand all / collapse all
+  const handleExpandAll = () => {
+    const newExpandedState = !allExpanded;
+    setAllExpanded(newExpandedState);
+    setExpandedSections({
+      general: newExpandedState,
+      multipleTries: newExpandedState,
+      tags: newExpandedState
+    });
   };
 
-  // Toggle bulk tag dropdown
-  const toggleBulkTagDropdown = (idx) => {
-    setBulkTagDropdowns(prev => ({
-      ...prev,
-      [idx]: !prev[idx]
-    }));
-  };
-
-  // Bulk edit: handle changes for each question
-  const handleBulkChange = (idx, e) => {
-    const { name, value, type, checked } = e.target;
-    setBulkQuestions(prev =>
-      prev.map((q, i) =>
-        i === idx ? { ...q, [name]: type === 'checkbox' ? checked : value } : q
-      )
-    );
-  };
-
-  // Bulk edit: handle save
-  const handleBulkSave = () => {
-    onSave(bulkQuestions.map(q => ({
-      ...q,
-      questionType: 'truefalse',
-      createdBy: {
-        name: username || "Unknown User",
-        role: "",
-        date: new Date().toLocaleString()
-      },
-      modifiedBy: {
-        name: username || "Unknown User",
-        role: "",
-        date: new Date().toLocaleString()
-      },
-      version: q.version ? 
-        `v${parseInt(q.version?.substring(1) || '0') + 1}` : 
-        'v1',
-      history: [
-        ...(q.history || []),
-        { 
-          version: q.version ? 
-            `v${parseInt(q.version?.substring(1) || '0') + 1}` : 
-            'v1',
-          date: new Date().toLocaleDateString(),
-          author: username || "Unknown User",
-          changes: q.version ? "Updated question" : "Created question"
-        }
-      ]
-    })));
+  // Save handlers
+  const handleSingleSave = () => {
+    if (!validate()) return;
+    onSave({
+      ...question,
+      questionType: 'truefalse'
+    });
     onClose();
   };
 
-  // Single edit: validation
-  const validateForm = () => {
-    const newErrors = {};
-    if (!question.title.trim()) newErrors.title = "Question name is required";
-    if (!question.questionText.trim()) newErrors.questionText = "Question text is required";
-    if (question.defaultMark <= 0) newErrors.defaultMark = "Default mark must be greater than 0";
-    if (question.tags.length === 0) newErrors.tags = "At least one tag is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Single edit: submit
-  const handleSubmit = () => {
-    if (validateForm()) {
-      onSave({
-        ...question,
-        questionType: 'truefalse',
-        createdBy: {
-          name: username || "Unknown User",
-          role: "",
-          date: new Date().toLocaleString()
-        },
-        modifiedBy: {
-          name: username || "Unknown User",
-          role: "",
-          date: new Date().toLocaleString()
-        },
-        version: existingQuestion ? 
-          `v${parseInt(existingQuestion.version?.substring(1) || '0') + 1}` : 
-          'v1',
-        history: [
-          ...(existingQuestion?.history || []),
-          { 
-            version: existingQuestion ? 
-              `v${parseInt(existingQuestion.version?.substring(1) || '0') + 1}` : 
-              'v1',
-            date: new Date().toLocaleDateString(),
-            author: username || "Unknown User",
-            changes: existingQuestion ? "Updated question" : "Created question"
-          }
-        ]
-      });
-      onClose();
-    }
-  };
-
-  // Single edit: handle input changes
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setQuestion(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
+  const handleBulkSave = () => {
+    const processedQuestions = bulkQuestions.map(q => ({
+      ...q,
+      questionType: 'truefalse'
     }));
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = {...prev};
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
+    onSave(processedQuestions);
+    onClose();
   };
 
-  // Tag dropdown component
-  const TagDropdown = ({ tags, onTagToggle, isOpen, onToggle, error }) => (
-    <div className="relative">
-      <div 
-        onClick={onToggle}
-        className={`w-full px-3 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md cursor-pointer bg-white flex items-center justify-between min-h-[42px]`}
-      >
-        <div className="flex flex-wrap gap-1">
-          {tags.length > 0 ? (
-            tags.map(tag => (
-              <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {tag}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTagToggle(tag);
-                  }}
-                  className="ml-1 text-blue-600 hover:text-blue-800"
-                >
-                  ×
-                </button>
-              </span>
-            ))
-          ) : (
-            <span className="text-gray-500">Select tags...</span>
-          )}
-        </div>
-        <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
-      {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-          {availableTags.map(tag => (
-            <div
-              key={tag}
-              onClick={() => onTagToggle(tag)}
-              className={`px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center justify-between ${
-                tags.includes(tag) ? 'bg-blue-50 text-blue-700' : ''
-              }`}
-            >
-              <span>{tag}</span>
-              {tags.includes(tag) && <span className="text-blue-600">✓</span>}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const correctAnswerOptions = [
+    { value: 'true', label: 'True' },
+    { value: 'false', label: 'False' }
+  ];
+
+  const statusOptions = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'ready', label: 'Ready' }
+  ];
+
+  const showInstructionsOptions = [
+    { value: 'true', label: 'Yes' },
+    { value: 'false', label: 'No' }
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-60">
-      <div className="bg-white rounded-lg shadow-xl w-[90%] max-w-4xl h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-5xl h-[95vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-          <h2 className="text-xl font-semibold">
-            {isBulk
-              ? 'Bulk Edit True/False Questions'
-              : (existingQuestion ? 'Edit True/False Question' : 'Create True/False Question')}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X size={24} />
-          </button>
-        </div>
+        <Header 
+          isBulk={isBulk} 
+          hasExistingQuestion={!!existingQuestion}
+          onClose={onClose}
+          onExpandAll={handleExpandAll}
+          allExpanded={allExpanded}
+        />
         
         {/* Content */}
-        <div className="flex-grow overflow-y-auto p-6">
-          <div className="space-y-6">
+        <div className="flex-grow overflow-y-auto">
+          <div className="p-6 space-y-6">
             {isBulk ? (
-              bulkQuestions.map((q, idx) => (
-                <div key={q.id || idx} className="mb-8 border-b pb-8">
-                  <div className="font-bold mb-4">Question #{idx + 1}</div>
-                  
-                  {/* Question Name */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Question name*</label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={q.title}
-                      onChange={e => handleBulkChange(idx, e)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      placeholder="Enter a descriptive name"
-                    />
-                  </div>
-
-                  {/* Tags */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tags/Level*</label>
-                    <TagDropdown
-                      tags={q.tags}
-                      onTagToggle={(tag) => handleBulkTagToggle(idx, tag)}
-                      isOpen={bulkTagDropdowns[idx]}
-                      onToggle={() => toggleBulkTagDropdown(idx)}
-                    />
-                  </div>
-
-                  {/* Question Text */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Question text*</label>
-                    <textarea
-                      name="questionText"
-                      value={q.questionText}
-                      onChange={e => handleBulkChange(idx, e)}
-                      className="w-full px-3 py-2 min-h-[120px] border border-gray-300 rounded-md"
-                      placeholder="Type your question here..."
-                    ></textarea>
-                  </div>
-
-                  {/* Default Mark */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Default mark</label>
-                    <input
-                      type="number"
-                      name="defaultMark"
-                      value={q.defaultMark}
-                      onChange={e => handleBulkChange(idx, e)}
-                      min="0"
-                      step="0.1"
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-
-                  {/* Penalty */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for each incorrect try</label>
-                    <input
-                      type="number"
-                      name="penalty"
-                      value={q.penalty}
-                      onChange={e => handleBulkChange(idx, e)}
-                      min="0"
-                      step="0.1"
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-
-                  {/* General Feedback */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">General feedback</label>
-                    <textarea
-                      name="generalFeedback"
-                      value={q.generalFeedback}
-                      onChange={e => handleBulkChange(idx, e)}
-                      className="w-full px-3 py-2 min-h-[80px] border border-gray-300 rounded-md"
-                      placeholder="Feedback that shows regardless of the answer chosen"
-                    ></textarea>
-                  </div>
-
-                  {/* Correct Answer */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Correct answer</label>
-                    <div className="flex items-center space-x-4">
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          name={`correctAnswer-${idx}`}
-                          value="true"
-                          checked={q.correctAnswer === 'true'}
-                          onChange={e => handleBulkChange(idx, e)}
-                          className="h-4 w-4 text-blue-600"
-                        />
-                        <span className="ml-2">True</span>
-                      </label>
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          name={`correctAnswer-${idx}`}
-                          value="false"
-                          checked={q.correctAnswer === 'false'}
-                          onChange={e => handleBulkChange(idx, e)}
-                          className="h-4 w-4 text-blue-600"
-                        />
-                        <span className="ml-2">False</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Show Instructions */}
-                  <div className="mb-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        name="showInstructions"
-                        checked={q.showInstructions}
-                        onChange={e => handleBulkChange(idx, e)}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Show instructions</span>
-                    </label>
-                  </div>
-
-                  {/* Feedback for responses */}
-                  <div className="mb-4">
-                    <h3 className="font-medium text-gray-700 mb-3">Feedback for each response</h3>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">For "True" response</label>
-                      <textarea
-                        name="feedbackTrue"
-                        value={q.feedbackTrue}
-                        onChange={e => handleBulkChange(idx, e)}
-                        className="w-full px-3 py-2 min-h-[80px] border border-gray-300 rounded-md"
-                        placeholder="Feedback shown when student selects 'True'"
-                      ></textarea>
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">For "False" response</label>
-                      <textarea
-                        name="feedbackFalse"
-                        value={q.feedbackFalse}
-                        onChange={e => handleBulkChange(idx, e)}
-                        className="w-full px-3 py-2 min-h-[80px] border border-gray-300 rounded-md"
-                        placeholder="Feedback shown when student selects 'False'"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  {/* Question Status */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Question status</label>
-                    <select
-                      name="status"
-                      value={q.status}
-                      onChange={e => handleBulkChange(idx, e)}
-                      className="w-40 px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="ready">Ready</option>
-                    </select>
-                  </div>
-                </div>
-              ))
+              <BulkEditForm
+                questions={bulkQuestions}
+                tagDropdowns={bulkTagDropdowns}
+                onBulkChange={handleBulkChange}
+                onBulkTagToggle={handleBulkTagToggle}
+                onToggleBulkTagDropdown={toggleBulkTagDropdown}
+                correctAnswerOptions={correctAnswerOptions}
+                statusOptions={statusOptions}
+              />
             ) : (
-              <>
-                {/* Single-question form */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question name* <span className="text-red-500">Required</span></label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={question.title}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-md`}
-                    placeholder="Enter a descriptive name"
-                  />
-                  {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tags/Level* <span className="text-red-500">Required</span></label>
-                  <TagDropdown
-                    tags={question.tags}
-                    onTagToggle={handleTagToggle}
-                    isOpen={showTagDropdown}
-                    onToggle={() => setShowTagDropdown(!showTagDropdown)}
-                    error={errors.tags}
-                  />
-                  {errors.tags && <p className="mt-1 text-sm text-red-500">{errors.tags}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question text* <span className="text-red-500">Required</span></label>
-                  <div className="border border-gray-300 rounded-md">
-                    {/* Toolbar */}
-                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
-                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
-                      </button>
-                    </div>
-                    <textarea
-                      name="questionText"
-                      value={question.questionText}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 min-h-[120px] border-0 rounded-b-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="Type your question here..."
-                    ></textarea>
-                  </div>
-                  {errors.questionText && <p className="mt-1 text-sm text-red-500">{errors.questionText}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Default mark</label>
-                  <input
-                    type="number"
-                    name="defaultMark"
-                    value={question.defaultMark}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.1"
-                    className={`w-24 px-3 py-2 border ${errors.defaultMark ? 'border-red-500' : 'border-gray-300'} rounded-md`}
-                  />
-                  {errors.defaultMark && <p className="mt-1 text-sm text-red-500">{errors.defaultMark}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Penalty for each incorrect try</label>
-                  <input
-                    type="number"
-                    name="penalty"
-                    value={question.penalty}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.1"
-                    className="w-24 px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">General feedback</label>
-                     {/* Toolbar */}
-                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
-                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
-                      </button>
-                    </div>
-                  <textarea
-                    name="generalFeedback"
-                    value={question.generalFeedback}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 min-h-[80px] border border-gray-300 rounded-md"
-                    placeholder="Feedback that shows regardless of the answer chosen"
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Correct answer</label>
-                  <div className="flex items-center space-x-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="correctAnswer"
-                        value="true"
-                        checked={question.correctAnswer === 'true'}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2">True</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="correctAnswer"
-                        value="false"
-                        checked={question.correctAnswer === 'false'}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2">False</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="checkbox"
-                      name="showInstructions"
-                      checked={question.showInstructions}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-blue-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Show instructions</span>
-                  </label>
-                </div>
-
-                <div>
-                  <h3 className="font-medium text-gray-700 mb-3">Feedback for each response</h3>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">For "True" response</label>
-                       {/* Toolbar */}
-                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
-                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
-                      </button>
-                    </div>
-                    <textarea
-                      name="feedbackTrue"
-                      value={question.feedbackTrue}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 min-h-[80px] border border-gray-300 rounded-md"
-                      placeholder="Feedback shown when student selects 'True'"
-                    ></textarea>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">For "False" response</label>
-                       {/* Toolbar */}
-                    <div className="border-b border-gray-200 p-2 flex items-center gap-1 bg-gray-50">
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">¶</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm italic">I</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm underline">U</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">A</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔤</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">⋯</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🔗</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🖼️</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">🎥</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">📁</button>
-                      <button className="p-1 hover:bg-gray-200 rounded text-sm">
-                        <img src="src/assets/icon_text/H5p.svg" className="w-6 h-6" alt="icon" />
-                      </button>
-                    </div>
-                    <textarea
-                      name="feedbackFalse"
-                      value={question.feedbackFalse}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 min-h-[80px] border border-gray-300 rounded-md"
-                      placeholder="Feedback shown when student selects 'False'"
-                    ></textarea>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Question status</label>
-                  <select
-                    name="status"
-                    value={question.status}
-                    onChange={handleChange}
-                    className="w-40 px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="ready">Ready</option>
-                  </select>
-                </div>
-              </>
+              <SingleEditForm
+                question={question}
+                errors={errors}
+                onUpdateField={updateField}
+                onTagToggle={handleTagToggle}
+                showTagDropdown={showTagDropdown}
+                setShowTagDropdown={setShowTagDropdown}
+                expandedSections={expandedSections}
+                onToggleSection={toggleSection}
+                correctAnswerOptions={correctAnswerOptions}
+                statusOptions={statusOptions}
+                showInstructionsOptions={showInstructionsOptions}
+              />
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50 flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={isBulk ? handleBulkSave : handleSubmit}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
-          >
-            <Save size={16} className="mr-2" />
-            Save Changes
-          </button>
-        </div>
+        <Footer 
+          onClose={onClose}
+          onSave={isBulk ? handleBulkSave : handleSingleSave}
+          isBulk={isBulk}
+        />
       </div>
     </div>
   );
 };
+
+// Header Component
+const Header = ({ isBulk, hasExistingQuestion, onClose, onExpandAll, allExpanded }) => (
+  <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <div className="flex justify-between items-center">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isBulk
+            ? 'Bulk Edit True/False Questions'
+            : (hasExistingQuestion ? 'Edit True/False Question' : 'Adding a True/False Question')}
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">
+          {isBulk 
+            ? 'Edit multiple True/False questions at once'
+            : 'Create or modify a True/False question with feedback options'
+          }
+        </p>
+      </div>
+      <div className="flex items-center space-x-2">
+        {!isBulk && (
+          <button 
+            onClick={onExpandAll}
+            className="text-blue-600 hover:text-blue-800 underline text-sm transition-colors"
+          >
+            {allExpanded ? 'Collapse all' : 'Expand all'}
+          </button>
+        )}
+        <button 
+          onClick={onClose} 
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// Footer Component
+const Footer = ({ onClose, onSave, isBulk }) => (
+  <div className="p-6 border-t border-gray-200 bg-gray-50">
+    <div className="flex justify-between items-center">
+      <div className="flex items-center text-sm text-red-600">
+        <AlertCircle size={16} className="mr-1" />
+        Required
+      </div>
+      <div className="flex space-x-3">
+        <button
+          onClick={onClose}
+          className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 flex items-center transition-all shadow-md"
+        >
+          <Save size={16} className="mr-2" />
+          Save Changes
+        </button>
+        {!isBulk && (
+          <button
+            onClick={onSave}
+            className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
+          >
+            Save and Continue Editing
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// Section Header Component
+const SectionHeader = ({ title, isExpanded, onToggle, icon: Icon, required = false }) => (
+  <button
+    onClick={onToggle}
+    className={`w-full flex items-center justify-between p-4 border border-gray-200 rounded-lg transition-all duration-200 ${
+      isExpanded 
+        ? 'bg-blue-50 hover:bg-blue-100 border-blue-200' 
+        : 'bg-gray-50 hover:bg-gray-100'
+    }`}
+  >
+    <div className="flex items-center space-x-3">
+      <ChevronDown 
+        size={20} 
+        className={`transform transition-transform duration-200 ${
+          isExpanded ? 'rotate-0 text-blue-600' : '-rotate-90 text-gray-600'
+        }`}
+      />
+      <div className="flex items-center space-x-2">
+        {Icon && <Icon size={20} className={isExpanded ? 'text-blue-600' : 'text-gray-600'} />}
+        <h3 className={`text-lg font-semibold ${
+          isExpanded ? 'text-blue-900' : 'text-gray-900'
+        }`}>
+          {title}
+        </h3>
+        {required && <span className="text-red-500 text-sm">*</span>}
+      </div>
+    </div>
+    <div className={`text-sm ${isExpanded ? 'text-blue-600' : 'text-gray-500'}`}>
+      {isExpanded ? 'Click to collapse' : 'Click to expand'}
+    </div>
+  </button>
+);
+
+// Single Edit Form Component
+const SingleEditForm = ({
+  question,
+  errors,
+  onUpdateField,
+  onTagToggle,
+  showTagDropdown,
+  setShowTagDropdown,
+  expandedSections,
+  onToggleSection,
+  correctAnswerOptions,
+  statusOptions,
+  showInstructionsOptions
+}) => (
+  <div className="space-y-6">
+    {/* Validation Errors */}
+    {Object.keys(errors).length > 0 && (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center mb-2">
+          <AlertCircle size={20} className="text-red-600 mr-2" />
+          <h4 className="text-red-800 font-medium">Please fix the following errors:</h4>
+        </div>
+        <ul className="list-disc list-inside text-red-700 space-y-1">
+          {Object.entries(errors).map(([field, message]) => (
+            <li key={field}>{message}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {/* General Section */}
+    <div className="space-y-4">
+      <SectionHeader
+        title="General"
+        isExpanded={expandedSections.general}
+        onToggle={() => onToggleSection('general')}
+        required={true}
+      />
+      
+      {expandedSections.general && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6 animate-in fade-in duration-200">
+          {/* Category */}
+          <FormField label="Category">
+            <Select
+              value="Default for P-test (8)"
+              onChange={() => {}}
+              options={[{ value: "Default for P-test (8)", label: "Default for P-test (8)" }]}
+              className="w-full"
+            />
+          </FormField>
+
+          {/* Question Name */}
+          <FormField label="Question name" required error={errors.title}>
+            <input
+              type="text"
+              value={question.title}
+              onChange={e => onUpdateField('title', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.title ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Enter a descriptive name for this question"
+            />
+          </FormField>
+
+          {/* Question Text */}
+          <FormField label="Question text" required error={errors.questionText}>
+            <TextEditor
+              value={question.questionText}
+              onChange={value => onUpdateField('questionText', value)}
+              placeholder="Type your question here..."
+              error={errors.questionText}
+              minHeight="200px"
+            />
+          </FormField>
+
+          {/* Question Status and Default Mark */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormField label="Question status">
+              <Select
+                value={question.status}
+                onChange={value => onUpdateField('status', value)}
+                options={statusOptions}
+                className="w-full"
+              />
+            </FormField>
+            
+            <FormField label="Default mark" error={errors.defaultMark}>
+              <NumberInput
+                value={question.defaultMark}
+                onChange={value => onUpdateField('defaultMark', value)}
+                min={0}
+                step={0.1}
+                className="w-full"
+                error={errors.defaultMark}
+              />
+            </FormField>
+
+            <FormField label="ID number">
+              <input
+                type="text"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Auto-generated"
+                disabled
+              />
+            </FormField>
+          </div>
+
+          {/* General Feedback */}
+          <FormField label="General feedback">
+            <TextEditor
+              value={question.generalFeedback}
+              onChange={value => onUpdateField('generalFeedback', value)}
+              placeholder="Feedback that shows regardless of the answer chosen"
+              minHeight="120px"
+            />
+          </FormField>
+
+          {/* Correct Answer */}
+          <FormField label="Correct answer">
+            <Select
+              value={question.correctAnswer}
+              onChange={value => onUpdateField('correctAnswer', value)}
+              options={correctAnswerOptions}
+              className="w-48"
+            />
+          </FormField>
+
+          {/* Show Instructions */}
+          <FormField label="Show standard instructions">
+            <div className="flex items-center space-x-2">
+              <Select
+                value={question.showInstructions ? 'true' : 'false'}
+                onChange={value => onUpdateField('showInstructions', value === 'true')}
+                options={showInstructionsOptions}
+                className="w-32"
+              />
+              <HelpCircle size={16} className="text-blue-500" />
+            </div>
+          </FormField>
+
+          {/* Feedback for Responses */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-medium text-gray-900">Feedback for each response</h4>
+            
+            <FormField label="Feedback for the response 'True'">
+              <TextEditor
+                value={question.feedbackTrue}
+                onChange={value => onUpdateField('feedbackTrue', value)}
+                placeholder="Feedback shown when student selects 'True'"
+                minHeight="120px"
+              />
+            </FormField>
+
+            <FormField label="Feedback for the response 'False'">
+              <TextEditor
+                value={question.feedbackFalse}
+                onChange={value => onUpdateField('feedbackFalse', value)}
+                placeholder="Feedback shown when student selects 'False'"
+                minHeight="120px"
+              />
+            </FormField>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Multiple Tries Section */}
+    <div className="space-y-4">
+      <SectionHeader
+        title="Multiple tries"
+        isExpanded={expandedSections.multipleTries}
+        onToggle={() => onToggleSection('multipleTries')}
+      />
+      
+      {expandedSections.multipleTries && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 animate-in fade-in duration-200">
+          <FormField label="Penalty for each incorrect try">
+            <div className="flex items-center space-x-2">
+              <NumberInput
+                value={question.penalty}
+                onChange={value => onUpdateField('penalty', value)}
+                min={0}
+                step={0.1}
+                className="w-32"
+              />
+              <HelpCircle size={16} className="text-blue-500" />
+            </div>
+          </FormField>
+        </div>
+      )}
+    </div>
+
+    {/* Tags Section */}
+    <div className="space-y-4">
+      <SectionHeader
+        title="Tags"
+        isExpanded={expandedSections.tags}
+        onToggle={() => onToggleSection('tags')}
+        required={true}
+      />
+      
+      {expandedSections.tags && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 animate-in fade-in duration-200">
+          <FormField label="Tags" required error={errors.tags}>
+            <TagDropdown
+              tags={question.tags}
+              onTagToggle={onTagToggle}
+              isOpen={showTagDropdown}
+              onToggle={() => setShowTagDropdown(!showTagDropdown)}
+              error={errors.tags}
+              availableTags={AVAILABLE_TAGS}
+            />
+            <p className="text-sm text-gray-500 mt-2">
+              Select tags to categorize and filter this question. You can search for existing tags or create new ones.
+            </p>
+          </FormField>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Bulk Edit Form Component (Simplified for space)
+const BulkEditForm = ({
+  questions,
+  tagDropdowns,
+  onBulkChange,
+  onBulkTagToggle,
+  onToggleBulkTagDropdown,
+  correctAnswerOptions,
+  statusOptions
+}) => (
+  <div className="space-y-8">
+    {questions.map((q, idx) => (
+      <div key={q.id || idx} className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Question #{idx + 1}</h3>
+          <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full w-16"></div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column */}
+          <div className="space-y-4">
+            <FormField label="Question name" required>
+              <input
+                type="text"
+                value={q.title}
+                onChange={e => onBulkChange(idx, 'title', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a descriptive name"
+              />
+            </FormField>
+
+            <FormField label="Tags/Level" required>
+              <TagDropdown
+                tags={q.tags}
+                onTagToggle={(tag) => onBulkTagToggle(idx, tag)}
+                isOpen={!!tagDropdowns[idx]}
+                onToggle={() => onToggleBulkTagDropdown(idx)}
+                availableTags={AVAILABLE_TAGS}
+              />
+            </FormField>
+
+            <FormField label="Correct answer">
+              <Select
+                value={q.correctAnswer}
+                onChange={value => onBulkChange(idx, 'correctAnswer', value)}
+                options={correctAnswerOptions}
+                className="w-full"
+              />
+            </FormField>
+
+            <FormField label="Question status">
+              <Select
+                value={q.status}
+                onChange={value => onBulkChange(idx, 'status', value)}
+                options={statusOptions}
+                className="w-full"
+              />
+            </FormField>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-4">
+            <FormField label="Question text" required>
+              <textarea
+                value={q.questionText}
+                onChange={e => onBulkChange(idx, 'questionText', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]"
+                placeholder="Type your question here..."
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Default mark">
+                <NumberInput
+                  value={q.defaultMark}
+                  onChange={value => onBulkChange(idx, 'defaultMark', value)}
+                  min={0}
+                  step={0.1}
+                  className="w-full"
+                />
+              </FormField>
+
+              <FormField label="Penalty">
+                <NumberInput
+                  value={q.penalty}
+                  onChange={value => onBulkChange(idx, 'penalty', value)}
+                  min={0}
+                  step={0.1}
+                  className="w-full"
+                />
+              </FormField>
+            </div>
+
+            <FormField>
+              <Checkbox
+                checked={q.showInstructions}
+                onChange={checked => onBulkChange(idx, 'showInstructions', checked)}
+                label="Show instructions"
+              />
+            </FormField>
+          </div>
+        </div>
+
+        {/* Feedback Section */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="text-lg font-medium text-gray-900 mb-4">Feedback for each response</h4>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <FormField label='For "True" response'>
+              <textarea
+                value={q.feedbackTrue}
+                onChange={e => onBulkChange(idx, 'feedbackTrue', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+                placeholder="Feedback shown when student selects 'True'"
+              />
+            </FormField>
+
+            <FormField label='For "False" response'>
+              <textarea
+                value={q.feedbackFalse}
+                onChange={e => onBulkChange(idx, 'feedbackFalse', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+                placeholder="Feedback shown when student selects 'False'"
+              />
+            </FormField>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 export default CreateTrueFalseQuestion;
