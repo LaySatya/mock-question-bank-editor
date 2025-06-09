@@ -17,115 +17,132 @@ export const useQuestionBank = (initialQuestions = []) => {
 
   const mapQuestionType = (xmlType) => {
     switch (xmlType) {
-      case "multichoice": return "multiple";
+      case "multichoice": return "multichoice";
       case "essay": return "essay";
       case "matching": return "matching";
       case "shortanswer": return "shortanswer";
       case "truefalse": return "truefalse";
-      default: return "multiple";
+      case "ddimageortext": return "ddimageortext";
+      case "ddmarker": return "ddmarker";
+      case "ddwtos": return "ddwtos";
+      case "numerical": return "numerical";
+      case "calculated": return "calculated";
+      case "calculatedmulti": return "calculatedmulti";
+      case "calculatedsimple": return "calculatedsimple";
+      case "multianswer": return "multianswer";
+      case "randomsamatch": return "randomsamatch";
+      case "gapselect": return "gapselect";
+      default: return "multichoice";
     }
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const xmlContent = e.target.result;
-          importQuestionFromXML(xmlContent);
-          alert("XML import successful!");
-        } catch (error) {
-          alert("Error importing XML: " + error.message);
-        }
-      };
-      reader.readAsText(file);
-    }
+  // Add a new question immutably
+  const addQuestion = (newQuestion) => {
+    setQuestions(prev => [...prev, newQuestion]);
   };
 
-  const importQuestionFromXML = (xmlString) => {
+  // Edit a question immutably
+  const editQuestion = (updatedQuestion) => {
+    setQuestions(prev =>
+      prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
+    );
+  };
+
+  // Bulk edit questions immutably
+  const bulkEditQuestions = (editedQuestions) => {
+    setQuestions(prev =>
+      prev.map(q =>
+        editedQuestions.find(eq => eq.id === q.id) || q
+      )
+    );
+  };
+
+  //  FIXED: Proper handleFileUpload with duplicate detection
+  const handleFileUpload = async (file, newQuestions) => {
+    console.log(' Starting import process:', {
+      file: file.name,
+      newQuestionsCount: newQuestions.length,
+      currentQuestionsCount: questions.length
+    });
+
     try {
-      const parser = new XMLParser({
-        ignoreAttributes: false,
-        attributeNamePrefix: '@_'
-      });
-      
-      const result = parser.parse(xmlString);
-      
-      if (!result || !result.quiz || !result.quiz.question) {
-        throw new Error("Invalid XML structure - missing quiz or question elements");
-      }
+      // Detect duplicates by comparing titles and question text
+      const duplicates = [];
+      const uniqueQuestions = [];
 
-      const xmlQuestions = Array.isArray(result.quiz.question)
-        ? result.quiz.question
-        : [result.quiz.question];
-
-      setQuestions(prevQuestions => {
-        const maxId = prevQuestions.length > 0 ? Math.max(...prevQuestions.map(q => q.id)) : 0;
-        const newQuestions = xmlQuestions.map((q, index) => {
-          const questionName = q.name?.text || `Imported Question ${index + 1}`;
-          const questionText = q.questiontext?.text || "No question text provided";
-          const questionType = q['@_type'] || "multiple";
+      newQuestions.forEach(newQ => {
+        const isDuplicate = questions.some(existingQ => {
+          const titleMatch = existingQ.title.toLowerCase().trim() === newQ.title.toLowerCase().trim();
+          const textMatch = existingQ.questionText.toLowerCase().trim() === newQ.questionText.toLowerCase().trim();
+          const idMatch = existingQ.id === newQ.id;
           
-          let options = [];
-          let correctAnswers = [];
-          
-          if (q.answer) {
-            const answers = Array.isArray(q.answer) ? q.answer : [q.answer];
-            
-            options = answers.map(a => {
-              const text = a.text || "No answer text";
-              const isCorrect = a['@_fraction'] === "100";
-              
-              if (isCorrect) {
-                correctAnswers.push(text);
-              }
-              
-              return text;
-            });
-          }
+          return titleMatch || textMatch || idMatch;
+        });
 
-          return {
-            id: maxId + index + 1,
-            title: questionName,
-            status: "draft",
-            version: "v1",
-            createdBy: {
-              name: "Imported",
-              role: "",
-              date: new Date().toLocaleString()
+        if (isDuplicate) {
+          duplicates.push(newQ);
+          console.log(' Duplicate detected:', newQ.title);
+        } else {
+          // Ensure unique IDs for new questions
+          const maxId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) : 0;
+          const questionWithNewId = {
+            ...newQ,
+            id: typeof newQ.id === 'string' ? maxId + uniqueQuestions.length + 1 : newQ.id,
+            status: newQ.status || 'draft',
+            version: newQ.version || 'v1',
+            createdBy: newQ.createdBy || {
+              name: 'Imported',
+              role: '',
+              date: new Date().toLocaleDateString()
             },
-            comments: 0,
-            usage: 0,
-            lastUsed: "Never",
-            modifiedBy: {
-              name: "Imported",
-              role: "",
-              date: new Date().toLocaleString()
+            modifiedBy: newQ.modifiedBy || {
+              name: 'Imported',
+              role: '',
+              date: new Date().toLocaleDateString()
             },
-            questionType: mapQuestionType(questionType),
-            questionText: questionText,
-            options: options,
-            correctAnswers: correctAnswers,
-            history: [{
+            comments: newQ.comments || 0,
+            usage: newQ.usage || 0,
+            lastUsed: newQ.lastUsed || '',
+            history: newQ.history || [{
               version: "v1",
               date: new Date().toLocaleDateString(),
               author: "Imported",
-              changes: "Imported from XML"
+              changes: `Imported from ${file.name}`
             }]
           };
-        })
-        .filter(newQ =>
-          !prevQuestions.some(
-            q => q.title === newQ.title && q.questionText === newQ.questionText
-          )
-        );
-        
-        return [...newQuestions, ...prevQuestions];
+          
+          uniqueQuestions.push(questionWithNewId);
+          console.log(' New question added:', questionWithNewId.title);
+        }
       });
+
+      console.log(' Import summary:', {
+        totalProcessed: newQuestions.length,
+        uniqueAdded: uniqueQuestions.length,
+        duplicatesSkipped: duplicates.length,
+        newTotalWillBe: questions.length + uniqueQuestions.length
+      });
+
+      // Update state with new questions
+      setQuestions(prev => {
+        const updated = [...uniqueQuestions, ...prev];
+        console.log(' State updated:', {
+          previousCount: prev.length,
+          newCount: updated.length,
+          questionsAdded: uniqueQuestions.length
+        });
+        return updated;
+      });
+
+      return {
+        imported: uniqueQuestions.length,
+        duplicates: duplicates.length,
+        total: questions.length + uniqueQuestions.length
+      };
+
     } catch (error) {
-      console.error("XML Import Error:", error);
-      throw new Error(`Error importing XML: ${error.message}`);
+      console.error(' Import error:', error);
+      throw error;
     }
   };
 
@@ -136,6 +153,10 @@ export const useQuestionBank = (initialQuestions = []) => {
       title: `Copy of: ${question.title}`,
       version: 'v1',
       status: 'draft',
+      
+      //  CRITICAL FIX: Always use qtype field consistently
+      qtype: question.qtype || 'multichoice', // Use qtype as primary
+      
       createdBy: {
         name: username,
         role: "",
@@ -157,6 +178,9 @@ export const useQuestionBank = (initialQuestions = []) => {
       lastUsed: "Never"
     };
     
+    //  IMPORTANT: Remove questionType field to avoid conflicts
+    delete newQuestion.questionType;
+
     setQuestions(prev => [...prev, newQuestion]);
   };
 
@@ -202,6 +226,9 @@ export const useQuestionBank = (initialQuestions = []) => {
     handleFileUpload,
     duplicateQuestion,
     deleteQuestion,
-    changeStatus
+    changeStatus,
+    addQuestion,
+    editQuestion,
+    bulkEditQuestions
   };
 };

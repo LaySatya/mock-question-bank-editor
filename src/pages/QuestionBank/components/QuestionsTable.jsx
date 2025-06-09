@@ -1,9 +1,9 @@
-// components/QuestionsTable.jsx
-import React from 'react';
-import { ChevronDown, Edit, Eye, Copy, Clock, Trash, CheckCircle, AlertTriangle } from 'lucide-react';
+// components/QuestionsTable.jsx - FIXED VERSION with enhanced tag display
+import React, { useEffect } from 'react';
 
 const QuestionsTable = ({
   questions,
+  allQuestions,
   filteredQuestions,
   selectedQuestions,
   setSelectedQuestions,
@@ -24,42 +24,143 @@ const QuestionsTable = ({
   onHistory,
   onDelete,
   onStatusChange,
-  username
+  setQType,
+  username,
+  setQuestions,
 }) => {
-  const getQuestionTypeIcon = (type) => {
-    switch(type) {
-      case 'multiple': return <img src="/src/assets/icon/Multiple-choice.svg" className="w-6 h-6" alt="icon" />;
-      case 'matching': return <img src="/src/assets/icon/Matching.svg" className="w-6 h-6" alt="icon" />;
-      case 'essay': return <img src="/src/assets/icon/Essay.svg" className="w-6 h-6" alt="icon" />;
-      case 'shortanswer': return <img src="/src/assets/icon/Short-answer.svg" className="w-6 h-6" alt="icon" />;
-      case 'truefalse': return <img src="/src/assets/icon/True-False.svg" className="w-6 h-6" alt="icon" />;
-      default: return <span className="w-6 h-6 inline-block">•</span>;
+
+  // FIXED: Enhanced tag processing function
+  const processTag = (tag) => {
+    if (typeof tag === 'string') {
+      return { name: tag, id: tag };
+    } else if (typeof tag === 'object' && tag !== null) {
+      return {
+        name: tag.name || tag.text || tag.value || tag.label || String(tag),
+        id: tag.id || tag.name || tag.text || tag.value || String(tag)
+      };
     }
+    return { name: String(tag || ''), id: String(tag || '') };
   };
 
-  const getTagColor = (tag) => {
-    // Difficulty tags
-    if (['easy'].includes(tag)) return 'bg-green-100 text-green-800';
-    if (['medium'].includes(tag)) return 'bg-yellow-100 text-yellow-800';
-    if (['hard'].includes(tag)) return 'bg-red-100 text-red-800';
+  // FIXED: Enhanced tag rendering with better debugging
+  const renderTags = (question) => {
+    console.log(`🏷️ Rendering tags for question ${question.id}:`, {
+      tags: question.tags,
+      tagsType: typeof question.tags,
+      tagsLength: Array.isArray(question.tags) ? question.tags.length : 'not array'
+    });
+
+    if (!question.tags || !Array.isArray(question.tags) || question.tags.length === 0) {
+      console.log(`❌ No tags to render for question ${question.id}`);
+      return null;
+    }
+
+    return (
+      <div className="tag_list hideoverlimit d-inline flex-shrink-1 text-truncate ml-1">
+        <b className="accesshide">Tags:</b>
+        <ul className="inline-list" style={{ display: 'inline', listStyle: 'none', padding: 0, margin: 0 }}>
+          {question.tags.map((tag, index) => {
+            const processedTag = processTag(tag);
+            const uniqueKey = `${question.id}-tag-${processedTag.id}-${index}`;
+            
+            console.log(`🏷️ Processing tag ${index}:`, { original: tag, processed: processedTag, key: uniqueKey });
+            
+            return (
+              <li key={uniqueKey} style={{ display: 'inline-block', marginRight: '4px' }}>
+                <a 
+                  href={`#tag=${encodeURIComponent(processedTag.name)}`} 
+                  className="badge badge-info"
+                  style={{
+                    backgroundColor: '#17a2b8',
+                    color: 'white',
+                    padding: '0.25em 0.4em',
+                    fontSize: '75%',
+                    fontWeight: '700',
+                    lineHeight: '1',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    verticalAlign: 'baseline',
+                    borderRadius: '0.25rem',
+                    textDecoration: 'none'
+                  }}
+                  title={`Filter by tag: ${processedTag.name}`}
+                >
+                  {processedTag.name}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openActionDropdown && dropdownRefs.current[openActionDropdown]) {
+        if (!dropdownRefs.current[openActionDropdown].contains(event.target)) {
+          setOpenActionDropdown(null);
+        }
+      }
+      
+      if (openStatusDropdown) {
+        const statusDropdown = document.querySelector(`[data-status-dropdown="${openStatusDropdown}"]`);
+        if (statusDropdown && !statusDropdown.contains(event.target)) {
+          setOpenStatusDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openActionDropdown, openStatusDropdown, setOpenActionDropdown, setOpenStatusDropdown, dropdownRefs]);
+
+  // FIXED: Enhanced debugging for questions
+  useEffect(() => {
+    console.log('🔍 QuestionsTable received questions:', {
+      questionsCount: questions?.length || 0,
+      sampleQuestion: questions?.[0] ? {
+        id: questions[0].id,
+        title: questions[0].title,
+        tags: questions[0].tags,
+        tagsType: typeof questions[0].tags,
+        tagsLength: Array.isArray(questions[0].tags) ? questions[0].tags.length : 'not array'
+      } : 'no questions'
+    });
+  }, [questions]);
+
+  const getQuestionTypeIcon = (qtype, question) => {
+    if (!question) {
+      return <span className="w-6 h-6 inline-block">•</span>;
+    }
     
-    // Subject tags
-    if (['programming', 'algorithms', 'data structures'].includes(tag)) return 'bg-purple-100 text-purple-800';
-    if (['databases', 'sql'].includes(tag)) return 'bg-indigo-100 text-indigo-800';
-    if (['networking', 'security'].includes(tag)) return 'bg-orange-100 text-orange-800';
-    if (['web development', 'html', 'css', 'javascript'].includes(tag)) return 'bg-blue-100 text-blue-800';
-    if (['operating systems'].includes(tag)) return 'bg-gray-100 text-gray-800';
+    const normalizedType = qtype || question.questionType || question.qtype;
     
-    // Technology tags
-    if (['python', 'java', 'c++'].includes(tag)) return 'bg-cyan-100 text-cyan-800';
-    
-    // Assessment type tags
-    if (['quiz', 'practice'].includes(tag)) return 'bg-teal-100 text-teal-800';
-    if (['exam', 'assignment'].includes(tag)) return 'bg-pink-100 text-pink-800';
-    if (['lab', 'project'].includes(tag)) return 'bg-emerald-100 text-emerald-800';
-    
-    // Default
-    return 'bg-gray-100 text-gray-600';
+    switch (normalizedType) {
+      case 'multichoice':
+      case 'multiple':
+        return <img src="/src/assets/icon/Multiple-choice.svg" className="w-6 h-6" alt="icon" />;
+      case 'matching':
+      case 'match':
+        return <img src="/src/assets/icon/Matching.svg" className="w-6 h-6" alt="icon" />;
+      case 'essay':
+        return <img src="/src/assets/icon/Essay.svg" className="w-6 h-6" alt="icon" />;
+      case 'shortanswer':
+        return <img src="/src/assets/icon/Short-answer.svg" className="w-6 h-6" alt="icon" />;
+      case 'truefalse':
+        return <img src="/src/assets/icon/True-False.svg" className="w-6 h-6" alt="icon" />;
+      case 'ddimageortext':
+        return <img src="/src/assets/icon/Drag and drop into text.svg" className="w-6 h-6" alt="icon" />;
+      case 'gapselect':
+        return <img src="/src/assets/icon/Gapfill.svg" className="w-6 h-6" alt="icon" />;
+      case 'ddmarker':
+        return <img src="/src/assets/icon/Drag and drop markers.svg" className="w-6 h-6" alt="icon" />;
+      default:
+        return <span className="icon">?</span>;
+    }
   };
 
   const toggleQuestionSelection = (id) => {
@@ -88,247 +189,376 @@ const QuestionsTable = ({
     setShowSaveConfirm(true);
   };
 
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="p-8 text-center text-gray-500">
+        <p>No questions found.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
+      <style jsx>{`
+        .dropdown-menu .dropdown-item {
+          display: flex;
+          align-items: center;
+          padding: 8px 16px;
+          white-space: nowrap;
+          clear: both;
+          font-weight: 400;
+          color: #212529;
+          text-decoration: none;
+          background-color: transparent;
+          border: 0;
+        }
+
+        .dropdown-item i {
+          margin-right: 8px;
+          width: 16px;
+          text-align: center;
+          color: #6c757d;
+        }
+
+        .dropdown-item:hover {
+          background-color: #f8f9fa;
+          color: #16181b;
+          text-decoration: none;
+        }
+
+        .dropdown-item:hover i {
+          color: #495057;
+        }
+
+        .menu-action-text {
+          flex: 1;
+        }
+
+        .dropdown-toggle {
+          background: none;
+          border: none;
+          color: #007bff;
+          text-decoration: none;
+          cursor: pointer;
+        }
+
+        .dropdown-toggle:hover {
+          color: #0056b3;
+          text-decoration: underline;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          z-index: 9999;
+          display: block;
+          min-width: 200px;
+          padding: 5px 0;
+          margin: 2px 0 0;
+          background-color: #fff;
+          border: 1px solid rgba(0,0,0,.15);
+          border-radius: 0.375rem;
+          box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        }
+
+        .action-menu-trigger {
+          position: relative;
+        }
+
+        .dropdown {
+          position: relative;
+        }
+
+        .dropdown-menu::before {
+          content: '';
+          position: absolute;
+          top: -10px;
+          left: -10px;
+          right: -10px;
+          bottom: -10px;
+          background: transparent;
+          z-index: -1;
+        }
+
+        /* FIXED: Enhanced tag styling */
+        .tag_list {
+          max-width: 200px;
+          overflow: hidden;
+        }
+
+        .tag_list .inline-list {
+          display: inline !important;
+          list-style: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        .tag_list .inline-list li {
+          display: inline-block !important;
+          margin-right: 4px !important;
+        }
+
+        .badge-info {
+          background-color: #17a2b8 !important;
+          color: white !important;
+        }
+
+        .badge-info:hover {
+          background-color: #138496 !important;
+          color: white !important;
+          text-decoration: none !important;
+        }
+
+        /* Debug styling for development */
+        .debug-tags {
+          border: 1px dashed red;
+          background: rgba(255, 0, 0, 0.1);
+          padding: 2px;
+        }
+      `}</style>
+
+      <table id="categoryquestions" className="table-responsive">
         <thead>
           <tr>
-            <th className="border-b px-2 py-2 text-center">
-              <input 
-                type="checkbox"
-                className="h-4 w-4"
-                onChange={handleSelectAll}
-                checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
-              />
+            <th className="header checkbox" scope="col">
+              <span title="Select questions for bulk actions">
+                <input 
+                  id="qbheadercheckbox" 
+                  name="qbheadercheckbox" 
+                  type="checkbox"  
+                  value="1"
+                  data-action="toggle"
+                  data-toggle="master"
+                  data-togglegroup="qbank"
+                  data-toggle-selectall="Select all"
+                  data-toggle-deselectall="Deselect all"
+                  onChange={handleSelectAll}
+                  checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
+                />
+                <label htmlFor="qbheadercheckbox" className="accesshide">Select all</label>
+              </span>
             </th>
-            <th className="border-b px-4 py-2 text-left font-medium text-blue-500">
-              <div className="flex items-center">
-                <span>T</span>
-                <span className="text-gray-500">▲</span>
-                <span className="ml-2">Actions</span>
+            <th className="header pr-3 questionstatus" scope="col">Status</th>
+            <th className="header pr-3 commentcount" scope="col">Comments</th>
+            <th className="header pr-3 questionversionnumber" scope="col">Version</th>
+            <th className="header pr-3 questionusage" scope="col">Usage</th>
+            <th className="header pr-3 questionlastused" scope="col">Last used</th>
+            <th className="header pr-3 creatorname" scope="col">
+              <div className="title">Created by</div>
+              <div className="sorters">
+                <a href="#" title="Sort by First name ascending">First name</a> / 
+                <a href="#" title="Sort by Last name ascending">Last name</a> / 
+                <a href="#" title="Sort by Date ascending">Date</a>
               </div>
             </th>
-            <th className="border-b px-4 py-2 text-left font-medium">
-              <div>
-                Question
-                <div className="text-xs font-normal text-gray-600">
-                  Question name / ID number
-                </div>
+            <th className="header pr-3 modifiername" scope="col">
+              <div className="title">Modified by</div>
+              <div className="sorters">
+                <a href="#" title="Sort by First name ascending">First name</a> / 
+                <a href="#" title="Sort by Last name ascending">Last name</a> / 
+                <a href="#" title="Sort by Date ascending">Date</a>
               </div>
             </th>
-            <th className="border-b px-4 py-2 text-left font-medium">Status</th>
-            <th className="border-b px-4 py-2 text-left font-medium">Version</th>
-            <th className="border-b px-4 py-2 text-left font-medium">
-              <div>
-                Created by
-                <div className="text-xs font-normal text-blue-500">
-                  First name / Surname / Date
-                </div>
+            <th className="header pr-3 qnameidnumbertags" scope="col">
+              <div className="title">Question</div>
+              <div className="sorters">
+                <a href="#" title="Sort by Question name ascending">Question name</a> / 
+                <a href="#" title="Sort by ID number ascending">ID number</a>
               </div>
             </th>
-            <th className="border-b px-4 py-2 text-center font-medium">Comments</th>
-            <th className="border-b px-4 py-2 text-center font-medium">Usage</th>
-            <th className="border-b px-4 py-2 text-left font-medium">
-              <div className="flex items-center">
-                Last used
-                <span className="ml-2 text-blue-500 bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center text-xs">?</span>
+            <th className="header qtype" scope="col">
+              <div className="sorters">
+                <a href="#" title="Sort by Question type descending">
+                  T<i className="icon fa fa-sort-asc fa-fw iconsort" title="Ascending" role="img" aria-label="Ascending"></i>
+                </a>
               </div>
             </th>
-            <th className="border-b px-4 py-2 text-left font-medium">
-              <div>
-                Modified by
-                <div className="text-xs font-normal text-blue-500">
-                  First name / Surname / Date
-                </div>
-              </div>
-            </th>
+            <th className="header pr-3 editmenu" scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
           {questions.map((question, index) => (
-            <tr key={question.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              <td className="border-b px-2 py-3 text-center">
+            <tr key={question.id} className={index % 2 === 0 ? 'r0' : 'r1'}>
+              <td className="checkbox">
                 <input 
-                  type="checkbox"
-                  className="h-4 w-4"
+                  id={`checkq${question.id}`}
+                  name={`q${question.id}`}
+                  type="checkbox"  
+                  value="1"
+                  data-action="toggle"
+                  data-toggle="slave"
+                  data-togglegroup="qbank"
                   checked={selectedQuestions.includes(question.id)}
                   onChange={() => toggleQuestionSelection(question.id)}
                 />
+                <label htmlFor={`checkq${question.id}`} className="accesshide">Select</label>
               </td>
               
-              <td className="border-b px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-center text-2xl">{getQuestionTypeIcon(question.questionType)}</span>
-                  <div className="relative" ref={el => dropdownRefs.current[question.id] = el}>
-                    <button 
-                      className="text-blue-500 hover:underline flex items-center"
-                      onClick={() => setOpenActionDropdown(openActionDropdown === question.id ? null : question.id)}
-                    >
-                      Edit <ChevronDown size={14} className="ml-1" />
-                    </button>
+              {/* Status Column */}
+              <td className="pr-3 questionstatus">
+                <div className="relative" data-status-dropdown={question.id}>
+                  <select 
+                    id={`question_status_dropdown-${question.id}`}
+                    className="custom-select my-2" 
+                    name="question_status_dropdown"
+                    value={question.status}
+                    onChange={(e) => onStatusChange(question.id, e.target.value)}
+                  >
+                    <option value="ready">Ready</option>
+                    <option value="draft">Draft</option>
+                    <option value="hidden">Hidden</option>
+                  </select>
+                </div>
+              </td>
+              
+              <td className="pr-3 commentcount">
+                <a href="#" data-target={`questioncommentpreview_${question.id}`} data-questionid={question.id} data-courseid="985" data-contextid="1">
+                  {question.comments || 0}
+                </a>
+              </td>
+              
+              <td className="pr-3 questionversionnumber">{question.version}</td>
+              
+              <td className="pr-3 questionusage">
+                <a href="#" data-target={`questionusagepreview_${question.id}`} data-questionid={question.id} data-courseid="985">
+                  {question.usage || 0}
+                </a>
+              </td>
+              
+              <td className="pr-3 questionlastused">
+                <span className="date">{question.lastUsed}</span>
+              </td>
+              
+              <td className="pr-3 creatorname">
+                <span className="qbank-creator-name">{question.createdBy?.name || ''}</span>
+                <br />
+                <span className="date">{question.createdBy?.date || ''}</span>
+              </td>
+              
+              <td className="pr-3 modifiername">
+                <span className="qbank-creator-name">{question.modifiedBy?.name || ''}</span>
+                <br />
+                <span className="date">{question.modifiedBy?.date || ''}</span>
+              </td>
+              
+              {/* FIXED: Enhanced Question Name and Tags Column */}
+              <td className="pr-3 qnameidnumbertags">
+                <div className="d-inline-flex flex-nowrap overflow-hidden w-100" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div className="question-title-container" style={{ width: '100%' }}>
+                    <label htmlFor={`checkq${question.id}`}>
+                      {editingQuestion === question.id ? (
+                        <input
+                          type="text"
+                          value={newQuestionTitle}
+                          onChange={(e) => setNewQuestionTitle(e.target.value)}
+                          className="inplaceeditable-text"
+                          autoFocus
+                          onBlur={() => initiateQuestionSave(question.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') initiateQuestionSave(question.id);
+                            if (e.key === 'Escape') setEditingQuestion(null);
+                          }}
+                        />
+                      ) : (
+                        <span 
+                          className="inplaceeditable inplaceeditable-text" 
+                          data-inplaceeditable="1" 
+                          data-component="qbank_viewquestionname" 
+                          data-itemtype="questionname" 
+                          data-itemid={question.id}
+                          data-value={question.title} 
+                          data-editlabel={`New value for ${question.title}`} 
+                          data-type="text" 
+                          data-options=""
+                        >
+                          <a href="#" className="quickeditlink aalink" data-inplaceeditablelink="1" title="Edit question name" onClick={() => startEditingTitle(question)}>
+                            {question.title}
+                            <span className="quickediticon visibleifjs">
+                              <i className="fa fa-pencil" title="Edit question name" aria-hidden="true"></i>
+                            </span>
+                          </a>
+                        </span>
+                      )}
+                    </label>
                     
-                    {openActionDropdown === question.id && (
-                      <div className="absolute left-0 mt-1 w-40 bg-white rounded shadow-lg z-10 border border-gray-200">
-                        <button
-                          onClick={() => {
-                            onPreview(question);
-                            setOpenActionDropdown(null);
-                          }}
-                          className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
-                        >
-                          <Eye size={14} className="mr-2" />
-                          Preview
-                        </button>
-                        <button
-                          onClick={() => {
-                            onEdit(question);
-                            setOpenActionDropdown(null);
-                          }}
-                          className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
-                        >
-                          <Edit size={14} className="mr-2" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => onDuplicate(question)}
-                          className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
-                        >
-                          <Copy size={14} className="mr-2" />
-                          Duplicate
-                        </button>
-                        <button
-                          onClick={() => {
-                            onHistory(question);
-                            setOpenActionDropdown(null);
-                          }}
-                          className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
-                        >
-                          <Clock size={14} className="mr-2" />
-                          History
-                        </button>
-                        <button
-                          onClick={() => onDelete(question.id)}
-                          className="flex items-center w-full px-3 py-2 text-sm text-left text-red-600 hover:bg-gray-100"
-                        >
-                          <Trash size={14} className="mr-2" />
-                          Delete
-                        </button>
+                    {question.idNumber && (
+                      <span className="ml-1">
+                        <span className="accesshide">ID number</span>&nbsp;
+                        <span className="badge badge-primary">{question.idNumber}</span>
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* FIXED: Enhanced Tags Rendering with Debug Info */}
+                  <div className="tags-container" style={{ width: '100%', marginTop: '4px' }}>
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="text-xs text-gray-500" style={{ fontSize: '10px', color: '#666' }}>
+                        Tags: {Array.isArray(question.tags) ? question.tags.length : 'not array'} | 
+                        Type: {typeof question.tags}
                       </div>
                     )}
+                    {renderTags(question)}
                   </div>
                 </div>
               </td>
               
-              <td className="border-b px-4 py-3">
-                {showQuestionText && (
-                  editingQuestion === question.id ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newQuestionTitle}
-                        onChange={(e) => setNewQuestionTitle(e.target.value)}
-                        className="border rounded px-2 py-1 w-full"
-                        autoFocus
-                        onBlur={() => initiateQuestionSave(question.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') initiateQuestionSave(question.id);
-                          if (e.key === 'Escape') setEditingQuestion(null);
-                        }}
-                      />
+              <td className="qtype">
+                {getQuestionTypeIcon(question.qtype || question.questionType, question)}
+              </td>
+              
+              <td className="pr-3 editmenu">
+                <div className="action-menu moodle-actionmenu" data-enhance="moodle-core-actionmenu">
+                  <div className="menubar d-flex">
+                    <div className="action-menu-trigger">
+                      <div className="dropdown">
+                        <a href="#" tabIndex="0" className="dropdown-toggle icon-no-margin" 
+                           aria-label="Edit" data-toggle="dropdown" role="button" 
+                           aria-haspopup="true" aria-expanded="false"
+                           onClick={() => setOpenActionDropdown(openActionDropdown === question.id ? null : question.id)}>
+                          Edit
+                          <b className="caret"></b>
+                        </a>
+                        {openActionDropdown === question.id && (
+                          <div className="dropdown-menu menu dropdown-menu-right" role="menu">
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1" 
+                              onClick={() => { onEdit(question); setOpenActionDropdown(null); }}>
+                              <i className="fa fa-cog"></i>
+                              <span className="menu-action-text">Edit question</span>
+                            </a>
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1" 
+                              onClick={() => { onDuplicate(question); setOpenActionDropdown(null); }}>
+                              <i className="fa fa-copy"></i>
+                              <span className="menu-action-text">Duplicate</span>
+                            </a>
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1">
+                              <i className="fa fa-tags"></i>
+                              <span className="menu-action-text">Manage tags</span>
+                            </a>
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1" 
+                              onClick={() => { onPreview(question); setOpenActionDropdown(null); }}>
+                              <i className="fa fa-search"></i>
+                              <span className="menu-action-text">Preview</span>
+                            </a>
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1" 
+                              onClick={() => { onHistory(question); setOpenActionDropdown(null); }}>
+                              <i className="fa fa-list"></i>
+                              <span className="menu-action-text">History</span>
+                            </a>
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1" 
+                              onClick={() => { onDelete(question.id); setOpenActionDropdown(null); }}>
+                              <i className="fa fa-trash"></i>
+                              <span className="menu-action-text">Delete</span>
+                            </a>
+                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1">
+                              <i className="fa fa-download"></i>
+                              <span className="menu-action-text">Export as Moodle XML</span>
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div>
-                      <button
-                        className="flex items-center gap-1 text-left w-full bg-transparent border-0 p-0 hover:underline focus:outline-none"
-                        onClick={() => startEditingTitle(question)}
-                        style={{ cursor: 'pointer' }}
-                        tabIndex={0}
-                      >
-                        <span>{question.title}</span>
-                        <Edit size={14} className="text-gray-700" />
-                      </button>
-                      {Array.isArray(question.tags) && question.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {question.tags.map(tag => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                )}
-              </td>
-              
-              <td className="border-b px-4 py-3">
-                <div className="relative">
-                  <button 
-                    className="border rounded px-3 py-1 bg-white flex items-center"
-                    onClick={() => setOpenStatusDropdown(openStatusDropdown === question.id ? null : question.id)}
-                  >
-                    {question.status === 'ready' ? 'Ready' : 'Draft'} <ChevronDown size={14} className="ml-1" />
-                  </button>
-                  
-                  {openStatusDropdown === question.id && (
-                    <div className="absolute left-0 mt-1 w-32 bg-white rounded shadow-lg z-10 border border-gray-200">
-                      <button
-                        onClick={() => onStatusChange(question.id, 'ready')}
-                        className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
-                      >
-                        <CheckCircle size={14} className="mr-2 text-green-600" />
-                        Ready
-                      </button>
-                      <button
-                        onClick={() => onStatusChange(question.id, 'draft')}
-                        className="flex items-center w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
-                      >
-                        <AlertTriangle size={14} className="mr-2 text-amber-600" />
-                        Draft
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </td>
-              
-              <td className="border-b px-4 py-3">{question.version}</td>
-              
-              <td className="border-b px-4 py-3">
-                <div>
-                  <div>{question.createdBy.name}</div>
-                  <div className="text-gray-600">{question.createdBy.role}</div>
-                  <div className="text-xs text-gray-600">{question.createdBy.date}</div>
-                </div>
-              </td>
-              
-              <td className="border-b px-4 py-3 text-center text-blue-500 font-medium">
-                <button
-                  onClick={() => alert(`View ${question.comments} comments for this question`)}
-                  className="hover:underline focus:outline-none"
-                >
-                  {question.comments}
-                </button>
-              </td>
-              
-              <td className="border-b px-4 py-3 text-center text-blue-500 font-medium">
-                <button
-                  onClick={() => alert(`This question is used in ${question.usage} quizzes`)}
-                  className="hover:underline focus:outline-none"
-                >
-                  {question.usage}
-                </button>
-              </td>
-              
-              <td className="border-b px-4 py-3">{question.lastUsed}</td>
-              
-              <td className="border-b px-4 py-3">
-                <div>
-                  <div>{question.modifiedBy.name}</div>
-                  <div className="text-gray-600">{question.modifiedBy.role}</div>
-                  <div className="text-xs text-gray-600">{question.modifiedBy.date}</div>
+                  </div>
                 </div>
               </td>
             </tr>

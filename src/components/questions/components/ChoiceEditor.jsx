@@ -1,84 +1,74 @@
+// ============================================================================
 // components/questions/components/ChoiceEditor.jsx
+// ============================================================================
+
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { TextEditor, FormField } from './SharedComponents';
+import { TextEditor, FormField, Select } from './SharedComponents';
 
-const ChoiceEditor = ({ choices, onUpdateChoice, onAddChoice, onRemoveChoice, errors = [], isBulk = false }) => (
-  <div>
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-medium text-gray-700">Answer Choices</h3>
-    </div>
-    <div className="space-y-4">
-      {choices.map((choice, index) => (
-        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-          <div className="flex justify-between items-start mb-3">
-            <h4 className="font-medium text-gray-700">Choice {index + 1}</h4>
-            <div className="flex gap-2">
-              {choices.length > 2 && (
-                <button
-                  onClick={() => onRemoveChoice(index)}
-                  className="text-red-500 hover:text-red-700 p-1"
-                  type="button"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-              {index === choices.length - 1 && (
-                <button
-                  onClick={onAddChoice}
-                  className="flex items-center px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                  type="button"
-                >
-                  <Plus size={14} className="mr-1" />
-                  Add
-                </button>
-              )}
+const ChoiceEditor = ({ 
+  choices, 
+  onUpdateChoice, 
+  onAddChoice, 
+  onRemoveChoice, 
+  errors = [], 
+  isBulk = false,
+  gradeOptions = []
+}) => {
+  console.log("ChoiceEditor received choices:", choices);
+
+  return (
+    <div>
+      <div className="space-y-4">
+        {choices.map((choice, index) => (
+          <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Choice {index + 1}
+              </label>
+                            <TextEditor
+                value={choice.text !== undefined ? choice.text : choice.answer || ''}
+                onChange={value => {
+                  onUpdateChoice(index, 'text', value);
+                  onUpdateChoice(index, 'answer', value); // <-- add this line
+                }}
+                placeholder=""
+                error={errors && errors[index]}
+                minHeight="80px"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField label="Grade">
+                <Select
+                  value={choice.grade}
+                  onChange={value => onUpdateChoice(index, 'grade', value)}
+                  options={gradeOptions}
+                  className="w-full"
+                />
+              </FormField>
+              <FormField label="Feedback">
+                <TextEditor
+                  value={choice.feedback}
+                  onChange={value => onUpdateChoice(index, 'feedback', value)}
+                  placeholder=""
+                  minHeight="80px"
+                />
+              </FormField>
             </div>
           </div>
-          
-          <div className="mb-3">
-            <FormField 
-              label="Answer text" 
-              required 
-              error={errors && errors[index]}
-            >
-              <TextEditor
-                value={choice.text}
-                onChange={value => onUpdateChoice(index, 'text', value)}
-                placeholder={`Enter choice ${index + 1} text...`}
-                error={errors && errors[index]}
-                minHeight="60px"
-              />
-            </FormField>
-          </div>
-          
-          <div className="mb-3">
-            <FormField label="Grade (%)">
-              <input
-                type="number"
-                value={choice.grade}
-                onChange={e => onUpdateChoice(index, 'grade', parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                min="-100"
-                max="100"
-                step="0.1"
-              />
-            </FormField>
-          </div>
-          
-          <FormField label="Feedback for this choice">
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={choice.feedback}
-              onChange={e => onUpdateChoice(index, 'feedback', e.target.value)}
-              placeholder="Optional feedback for this choice..."
-            />
-          </FormField>
-        </div>
-      ))}
+        ))}
+        <button
+          onClick={onAddChoice}
+          type="button"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+        >
+          Blanks for 3 more choices
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+
 
 export default ChoiceEditor;

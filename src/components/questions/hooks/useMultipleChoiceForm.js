@@ -1,20 +1,63 @@
-// components/questions/hooks/useMultipleChoiceForm.js
+// ============================================================================
+// components/questions/hooks/useMultipleChoiceForm.js - FIXED
+// ============================================================================
+
 import { useState, useCallback } from 'react';
 import { DEFAULT_CHOICES } from '../constants/questionConstants';
 
+// Helper function to create deep copy of choices
+const createFreshChoices = (choices) => {
+  if (!choices || choices.length === 0) {
+    return DEFAULT_CHOICES.map((choice, index) => ({
+      id: `fresh-choice-${Date.now()}-${index}`,
+      text: '',
+      grade: 'None',
+      feedback: ''
+    }));
+  }
+  
+  return choices.map((choice, index) => ({
+    id: choice.id || `choice-${Date.now()}-${index}`,
+    text: choice.text || '',
+    grade: choice.grade || 'None',
+    feedback: choice.feedback || ''
+  }));
+};
+
 export const useMultipleChoiceForm = (initialQuestion = {}) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     title: initialQuestion.title || '',
     questionText: initialQuestion.questionText || '',
-    defaultMark: initialQuestion.defaultMark ?? 1,
-    penaltyFactor: initialQuestion.penaltyFactor ?? 0.1,
+    qtype: initialQuestion.qtype || 'multichoice', 
+    questionStatus: initialQuestion.questionStatus || 'Ready',
+    defaultMark: initialQuestion.defaultMark ?? 100,
+    idNumber: initialQuestion.idNumber || '',
     generalFeedback: initialQuestion.generalFeedback || '',
     multipleAnswers: initialQuestion.multipleAnswers ?? false,
     shuffleAnswers: initialQuestion.shuffleAnswers ?? true,
-    showInstructions: initialQuestion.showInstructions ?? true,
-    choices: initialQuestion.choices && initialQuestion.choices.length > 0 ? initialQuestion.choices : DEFAULT_CHOICES,
-    tags: initialQuestion.tags || []
-  });
+    numberChoices: initialQuestion.numberChoices || '1, 2, 3, ...',
+    showInstructions: initialQuestion.showInstructions ?? false,
+    choices: createFreshChoices(initialQuestion.choices),
+    tags: initialQuestion.tags ? [...initialQuestion.tags] : [],
+    combinedFeedback: initialQuestion.combinedFeedback ? {
+      correct: initialQuestion.combinedFeedback.correct || 'Your answer is correct.',
+      partiallyCorrect: initialQuestion.combinedFeedback.partiallyCorrect || 'Your answer is partially correct.',
+      incorrect: initialQuestion.combinedFeedback.incorrect || 'Your answer is incorrect.',
+      showNumberCorrect: initialQuestion.combinedFeedback.showNumberCorrect ?? false
+    } : {
+      correct: 'Your answer is correct.',
+      partiallyCorrect: 'Your answer is partially correct.',
+      incorrect: 'Your answer is incorrect.',
+      showNumberCorrect: false
+    },
+    penaltyFactor: initialQuestion.penaltyFactor ?? 0,
+    hint1: initialQuestion.hint1 || '',
+    hint1ClearIncorrect: initialQuestion.hint1ClearIncorrect ?? false,
+    hint1ShowNumCorrect: initialQuestion.hint1ShowNumCorrect ?? false,
+    hint2: initialQuestion.hint2 || '',
+    hint2ClearIncorrect: initialQuestion.hint2ClearIncorrect ?? false,
+    hint2ShowNumCorrect: initialQuestion.hint2ShowNumCorrect ?? false
+  }));
 
   const [errors, setErrors] = useState({});
 
@@ -32,8 +75,11 @@ export const useMultipleChoiceForm = (initialQuestion = {}) => {
 
   const updateChoice = useCallback((index, field, value) => {
     setFormData(prev => {
-      const newChoices = [...prev.choices];
-      newChoices[index][field] = value;
+      const newChoices = prev.choices.map((choice, i) => 
+        i === index 
+          ? { ...choice, [field]: value }
+          : choice
+      );
       return { ...prev, choices: newChoices };
     });
   }, []);
@@ -41,7 +87,16 @@ export const useMultipleChoiceForm = (initialQuestion = {}) => {
   const addChoice = useCallback(() => {
     setFormData(prev => ({
       ...prev,
-      choices: [...prev.choices, { text: '', grade: 0, feedback: '' }]
+      choices: [
+        ...prev.choices,
+        {
+          id: Date.now(),
+          text: '',
+          answer: '', // <-- make sure this is present!
+          grade: 'None',
+          feedback: ''
+        }
+      ]
     }));
   }, []);
 
@@ -70,6 +125,7 @@ export const useMultipleChoiceForm = (initialQuestion = {}) => {
     if (!formData.title.trim()) newErrors.title = 'Question name is required';
     if (!formData.questionText.trim()) newErrors.questionText = 'Question text is required';
     if (!formData.tags || formData.tags.length === 0) newErrors.tags = 'At least one tag is required';
+    if (formData.defaultMark <= 0) newErrors.defaultMark = 'Default mark must be greater than 0';
 
     // Per-choice validation
     const choiceErrors = formData.choices.map((choice, idx) => {
@@ -78,7 +134,12 @@ export const useMultipleChoiceForm = (initialQuestion = {}) => {
     });
     if (choiceErrors.some(Boolean)) newErrors.choices = choiceErrors;
 
-    if (!formData.choices.some(choice => choice.grade > 0)) {
+    // Check if at least one choice has a positive grade
+    const hasPositiveGrade = formData.choices.some(choice => {
+      const grade = choice.grade;
+      return grade !== 'None' && parseFloat(grade) > 0;
+    });
+    if (!hasPositiveGrade) {
       newErrors.grade = 'At least one choice must have a positive grade';
     }
 
@@ -87,17 +148,39 @@ export const useMultipleChoiceForm = (initialQuestion = {}) => {
   }, [formData]);
 
   const resetForm = useCallback((question = {}) => {
+    console.log('Resetting form with question:', question);
+    
     setFormData({
       title: question.title || '',
       questionText: question.questionText || '',
-      defaultMark: question.defaultMark ?? 1,
-      penaltyFactor: question.penaltyFactor ?? 0.1,
+      questionStatus: question.questionStatus || 'Ready',
+      defaultMark: question.defaultMark ?? 100,
+      idNumber: question.idNumber || '',
       generalFeedback: question.generalFeedback || '',
       multipleAnswers: question.multipleAnswers ?? false,
       shuffleAnswers: question.shuffleAnswers ?? true,
-      showInstructions: question.showInstructions ?? true,
-      choices: question.choices && question.choices.length > 0 ? question.choices : DEFAULT_CHOICES,
-      tags: question.tags || []
+      numberChoices: question.numberChoices || '1, 2, 3, ...',
+      showInstructions: question.showInstructions ?? false,
+      choices: createFreshChoices(question.choices),
+      tags: question.tags ? [...question.tags] : [],
+      combinedFeedback: question.combinedFeedback ? {
+        correct: question.combinedFeedback.correct || 'Your answer is correct.',
+        partiallyCorrect: question.combinedFeedback.partiallyCorrect || 'Your answer is partially correct.',
+        incorrect: question.combinedFeedback.incorrect || 'Your answer is incorrect.',
+        showNumberCorrect: question.combinedFeedback.showNumberCorrect ?? false
+      } : {
+        correct: 'Your answer is correct.',
+        partiallyCorrect: 'Your answer is partially correct.',
+        incorrect: 'Your answer is incorrect.',
+        showNumberCorrect: false
+      },
+      penaltyFactor: question.penaltyFactor ?? 0,
+      hint1: question.hint1 || '',
+      hint1ClearIncorrect: question.hint1ClearIncorrect ?? false,
+      hint1ShowNumCorrect: question.hint1ShowNumCorrect ?? false,
+      hint2: question.hint2 || '',
+      hint2ClearIncorrect: question.hint2ClearIncorrected ?? false,
+      hint2ShowNumCorrect: question.hint2ShowNumCorrect ?? false
     });
     setErrors({});
   }, []);

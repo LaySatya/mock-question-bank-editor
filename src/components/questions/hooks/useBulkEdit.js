@@ -1,27 +1,78 @@
-// components/questions/hooks/useBulkEdit.js
-import { useState, useCallback } from 'react';
+// ============================================================================
+// components/questions/hooks/useBulkEdit.js - FIXED
+// ============================================================================
+
+import { useState, useCallback, useEffect } from 'react';
 import { DEFAULT_CHOICES } from '../constants/questionConstants';
 
-export const useBulkEdit = (questionsToEdit, isBulk) => {
-  const [bulkQuestions, setBulkQuestions] = useState(
-    isBulk
-      ? questionsToEdit.map(q => ({
-          ...q,
-          title: q.title || '',
-          questionText: q.questionText || '',
-          defaultMark: q.defaultMark ?? 1,
-          penaltyFactor: q.penaltyFactor ?? 0.1,
-          generalFeedback: q.generalFeedback || '',
-          multipleAnswers: q.multipleAnswers ?? false,
-          shuffleAnswers: q.shuffleAnswers ?? true,
-          showInstructions: q.showInstructions ?? true,
-          choices: q.choices && q.choices.length > 0 ? q.choices : DEFAULT_CHOICES,
-          tags: q.tags || []
-        }))
-      : []
-  );
+// Helper function to create fresh choices for bulk edit
+const createFreshBulkChoices = (choices, questionIndex) => {
+  if (!choices || choices.length === 0) {
+    return DEFAULT_CHOICES.map((choice, choiceIndex) => ({
+      id: `bulk-choice-${questionIndex}-${choiceIndex}-${Date.now()}`,
+      text: '',
+      grade: 'None',
+      feedback: ''
+    }));
+  }
+  
+  return choices.map((choice, choiceIndex) => ({
+    id: choice.id || `bulk-choice-${questionIndex}-${choiceIndex}-${Date.now()}`,
+    text: choice.text || '',
+    grade: choice.grade || 'None',
+    feedback: choice.feedback || ''
+  }));
+};
 
+export const useBulkEdit = (questionsToEdit, isBulk) => {
+  const [bulkQuestions, setBulkQuestions] = useState([]);
   const [bulkTagDropdowns, setBulkTagDropdowns] = useState({});
+
+  useEffect(() => {
+    console.log('useBulkEdit: Processing questions', questionsToEdit, 'isBulk:', isBulk);
+
+    if (isBulk && questionsToEdit) {
+      const processedQuestions = questionsToEdit.map((q, index) => ({
+        ...q,
+        id: q.id || `bulk-question-${index}-${Date.now()}`,
+        title: q.title || '',
+        questionText: q.questionText || '',
+        questionStatus: q.questionStatus || 'Ready',
+        defaultMark: q.defaultMark ?? 100,
+        idNumber: q.idNumber || '',
+        generalFeedback: q.generalFeedback || '',
+        multipleAnswers: q.multipleAnswers ?? false,
+        shuffleAnswers: q.shuffleAnswers ?? true,
+        numberChoices: q.numberChoices || '1, 2, 3, ...',
+        showInstructions: q.showInstructions ?? false,
+        choices: createFreshBulkChoices(q.choices, index),
+        tags: q.tags ? [...q.tags] : [],
+        combinedFeedback: q.combinedFeedback ? {
+          correct: q.combinedFeedback.correct || 'Your answer is correct.',
+          partiallyCorrect: q.combinedFeedback.partiallyCorrect || 'Your answer is partially correct.',
+          incorrect: q.combinedFeedback.incorrect || 'Your answer is incorrect.',
+          showNumberCorrect: q.combinedFeedback.showNumberCorrect ?? false
+        } : {
+          correct: 'Your answer is correct.',
+          partiallyCorrect: 'Your answer is partially correct.',
+          incorrect: 'Your answer is incorrect.',
+          showNumberCorrect: false
+        },
+        penaltyFactor: q.penaltyFactor ?? 0,
+        hint1: q.hint1 || '',
+        hint1ClearIncorrect: q.hint1ClearIncorrect ?? false,
+        hint1ShowNumCorrect: q.hint1ShowNumCorrect ?? false,
+        hint2: q.hint2 || '',
+        hint2ClearIncorrect: q.hint2ClearIncorrect ?? false,
+        hint2ShowNumCorrect: q.hint2ShowNumCorrect ?? false
+      }));
+      
+      console.log('Processed bulk questions:', processedQuestions);
+      setBulkQuestions(processedQuestions);
+    } else {
+      setBulkQuestions([]);
+    }
+  }, [questionsToEdit, isBulk]);
 
   const handleBulkChange = useCallback((idx, field, value) => {
     setBulkQuestions(prev =>
@@ -31,11 +82,19 @@ export const useBulkEdit = (questionsToEdit, isBulk) => {
 
   const handleBulkChoiceChange = useCallback((qIdx, cIdx, field, value) => {
     setBulkQuestions(prev =>
-      prev.map((q, i) => {
-        if (i !== qIdx) return q;
-        const newChoices = [...q.choices];
-        newChoices[cIdx][field] = value;
-        return { ...q, choices: newChoices };
+      prev.map((question, questionIndex) => {
+        if (questionIndex !== qIdx) return question;
+        
+        const newChoices = question.choices.map((choice, choiceIndex) =>
+          choiceIndex === cIdx 
+            ? { ...choice, [field]: value }
+            : choice
+        );
+        
+        return {
+          ...question,
+          choices: newChoices
+        };
       })
     );
   }, []);
@@ -66,7 +125,18 @@ export const useBulkEdit = (questionsToEdit, isBulk) => {
     setBulkQuestions(prev =>
       prev.map((q, i) =>
         i === qIdx
-          ? { ...q, choices: [...q.choices, { text: '', grade: 0, feedback: '' }] }
+          ? { 
+              ...q, 
+              choices: [
+                ...q.choices, 
+                { 
+                  id: `new-bulk-choice-${qIdx}-${q.choices.length}-${Date.now()}`,
+                  text: '', 
+                  grade: 'None', 
+                  feedback: '' 
+                }
+              ] 
+            }
           : q
       )
     );

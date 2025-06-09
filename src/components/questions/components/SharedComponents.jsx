@@ -1,6 +1,41 @@
-// components/questions/components/SharedComponents.jsx
+// ============================================================================
+// components/questions/components/SharedComponents.jsx - COMPLETE
+// ============================================================================
+
 import React, { useRef, useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+
+// Enhanced TextEditor Component
+export const TextEditor = ({ value, onChange, placeholder, error, minHeight = "120px" }) => (
+  <div className={`border rounded-lg overflow-hidden transition-all ${
+    error ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500'
+  }`}>
+    {/* Toolbar matching the screenshots */}
+    <div className="border-b border-gray-200 p-2 bg-gray-50 flex items-center gap-1">
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Paragraph">¶</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm font-bold transition-colors" title="Bold">B</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm italic transition-colors" title="Italic">I</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm underline transition-colors" title="Underline">U</button>
+      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Numbered List">📝</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Bullet List">📋</button>
+      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Link">🔗</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Unlink">🔗</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Image">🖼️</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Media">🎥</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="File">📁</button>
+      <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="H5P">H5P</button>
+    </div>
+    <textarea
+      className="w-full px-4 py-3 border-0 focus:outline-none resize-none"
+      style={{ minHeight }}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  </div>
+);
 
 // Enhanced TagDropdown Component
 export const TagDropdown = ({ tags, onTagToggle, isOpen, onToggle, error, availableTags }) => {
@@ -45,10 +80,15 @@ export const TagDropdown = ({ tags, onTagToggle, isOpen, onToggle, error, availa
               </span>
             ))
           ) : (
-            <span className="text-gray-500">Select tags...</span>
+            <span className="text-gray-500">Any tags</span>
           )}
         </div>
-        <ChevronDown size={20} className={`transform transition-transform text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />
+        <div className="flex items-center space-x-1">
+          <select className="border-0 bg-transparent text-sm">
+            <option>Search</option>
+          </select>
+          <ChevronDown size={16} className={`transform transition-transform text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
       </div>
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
@@ -79,44 +119,6 @@ export const TagDropdown = ({ tags, onTagToggle, isOpen, onToggle, error, availa
   );
 };
 
-// Enhanced TextEditor Component
-export const TextEditor = ({ value, onChange, placeholder, error, minHeight = "120px" }) => (
-  <div className={`border rounded-lg overflow-hidden transition-all ${
-    error ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500'
-  }`}>
-    {/* Enhanced Toolbar */}
-    <div className="border-b border-gray-200 p-3 bg-gray-50 flex items-center gap-2">
-      <div className="flex items-center gap-1 border-r border-gray-300 pr-2 mr-2">
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Paragraph">¶</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm font-bold transition-colors" title="Bold">B</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm italic transition-colors" title="Italic">I</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm underline transition-colors" title="Underline">U</button>
-      </div>
-      <div className="flex items-center gap-1 border-r border-gray-300 pr-2 mr-2">
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Font Color">A</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Text Case">🔤</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="More">⋯</button>
-      </div>
-      <div className="flex items-center gap-1">
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Link">🔗</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Image">🖼️</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="Video">🎥</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded text-sm transition-colors" title="File">📁</button>
-        <button type="button" className="p-2 hover:bg-gray-200 rounded transition-colors" title="H5P">
-          <img src="src/assets/icon_text/H5p.svg" className="w-5 h-5" alt="H5P" />
-        </button>
-      </div>
-    </div>
-    <textarea
-      className="w-full px-4 py-3 border-0 focus:outline-none resize-none"
-      style={{ minHeight }}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-    />
-  </div>
-);
-
 // Enhanced FormField Component
 export const FormField = ({ 
   label, 
@@ -128,7 +130,7 @@ export const FormField = ({
 }) => (
   <div className={className}>
     {label && (
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-gray-700">
         {label} 
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -171,55 +173,6 @@ export const NumberInput = ({
   />
 );
 
-// Enhanced RadioGroup Component
-export const RadioGroup = ({ 
-  name, 
-  value, 
-  onChange, 
-  options, 
-  className = "flex items-center space-x-6" 
-}) => (
-  <div className={className}>
-    {options.map(option => (
-      <label key={option.value} className="inline-flex items-center cursor-pointer">
-        <input
-          type="radio"
-          name={name}
-          value={option.value}
-          checked={value === option.value}
-          onChange={e => onChange(e.target.value)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 transition-colors"
-        />
-        <span className="ml-3 text-sm font-medium text-gray-900">{option.label}</span>
-      </label>
-    ))}
-  </div>
-);
-
-// Enhanced Checkbox Component
-export const Checkbox = ({ 
-  checked, 
-  onChange, 
-  label, 
-  className = "inline-flex items-center",
-  description
-}) => (
-  <div className="space-y-1">
-    <label className={`${className} cursor-pointer`}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={e => onChange(e.target.checked)}
-        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
-      />
-      <span className="ml-3 text-sm font-medium text-gray-900">{label}</span>
-    </label>
-    {description && (
-      <p className="text-sm text-gray-600 ml-7">{description}</p>
-    )}
-  </div>
-);
-
 // Enhanced Select Component
 export const Select = ({ 
   value, 
@@ -246,6 +199,60 @@ export const Select = ({
   </select>
 );
 
+// Enhanced Checkbox Component
+export const Checkbox = ({ 
+  checked, 
+  onChange, 
+  label, 
+  className = "inline-flex items-center",
+  description
+}) => (
+  <div className="space-y-1">
+    <label className={`${className} cursor-pointer`}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+      />
+      <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>
+    </label>
+    {description && (
+      <p className="text-sm text-gray-600 ml-7">{description}</p>
+    )}
+  </div>
+);
+
+// Enhanced RadioGroup Component
+export const RadioGroup = ({ 
+  name, 
+  value, 
+  onChange, 
+  options, 
+  className = "flex items-center space-x-6" 
+}) => (
+  <div className={className}>
+    {options.map(option => (
+      <label 
+        key={option.value} 
+        className="inline-flex items-center cursor-pointer"
+      >
+        <input
+          type="radio"
+          name={name}
+          value={option.value}
+          checked={value === option.value}
+          onChange={e => onChange(e.target.value)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 transition-colors"
+        />
+        <span className="ml-3 text-sm font-medium text-gray-900">
+          {option.label}
+        </span>
+      </label>
+    ))}
+  </div>
+);
+
 // ValidationErrors Component
 export const ValidationErrors = ({ errors }) => {
   if (!errors || Object.keys(errors).length === 0) return null;
@@ -264,53 +271,5 @@ export const ValidationErrors = ({ errors }) => {
         )}
       </ul>
     </div>
-  );
-};
-
-// Loading Spinner Component
-export const LoadingSpinner = ({ size = "md", className = "" }) => {
-  const sizeClasses = {
-    sm: "h-4 w-4",
-    md: "h-8 w-8",
-    lg: "h-12 w-12"
-  };
-
-  return (
-    <div className={`animate-spin rounded-full border-b-2 border-blue-600 ${sizeClasses[size]} ${className}`} />
-  );
-};
-
-// Card Component
-export const Card = ({ children, className = "", padding = "p-6" }) => (
-  <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${padding} ${className}`}>
-    {children}
-  </div>
-);
-
-// Badge Component
-export const Badge = ({ 
-  children, 
-  variant = "default", 
-  size = "md",
-  className = "" 
-}) => {
-  const variants = {
-    default: "bg-gray-100 text-gray-800",
-    primary: "bg-blue-100 text-blue-800",
-    success: "bg-green-100 text-green-800",
-    warning: "bg-yellow-100 text-yellow-800",
-    error: "bg-red-100 text-red-800"
-  };
-
-  const sizes = {
-    sm: "px-2 py-1 text-xs",
-    md: "px-3 py-1 text-sm",
-    lg: "px-4 py-2 text-base"
-  };
-
-  return (
-    <span className={`inline-flex items-center font-medium rounded-full ${variants[variant]} ${sizes[size]} ${className}`}>
-      {children}
-    </span>
   );
 };

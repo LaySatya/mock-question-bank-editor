@@ -6,7 +6,7 @@ import QuestionBank from './pages/QuestionBank/QuestionBank';
 import ManageUsers from './pages/ManageUsers';
 import LoginPage from './pages/LoginPage';
 import { logoutUser } from './api/userapi';
-
+import './styles/moodle-question-bank.css';
 const App = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);

@@ -20,15 +20,17 @@ export const useFilters = (questions) => {
     );
   }, [questions]);
 
-  const filteredQuestions = useMemo(() => {
-    return questions.filter(q =>
-      q.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (filters.type === 'All' || q.questionType === filters.type) &&
-      (filters.status === 'All' || q.status === filters.status) &&
-      (tagFilter === 'All' || (Array.isArray(q.tags) && q.tags.includes(tagFilter)))
-    );
+   const filteredQuestions = useMemo(() => {
+    return questions.filter(q => {
+      const text = String(q.title || q.name || q.questiontext || '');
+      return (
+        text.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        (filters.type === 'All' || q.questionType === filters.type) &&
+        (filters.status === 'All' || q.status === filters.status) &&
+        (tagFilter === 'All' || (Array.isArray(q.tags) && q.tags.includes(tagFilter)))
+      );
+    });
   }, [questions, searchQuery, filters, tagFilter]);
-
   return {
     searchQuery,
     setSearchQuery,

@@ -140,20 +140,84 @@ export const MOCK_QUESTIONS = [
   {
     id: 108,
     title: "Can HTML create dynamic web pages by itself?",
-    questionText: "Determine if HTML alone can create dynamic, interactive web pages.",
+    status: "draft",
+    version: "v1",
+    createdBy: { name: "Unknow User", role: "Teacher", date: "2 June 2025, 2:30 PM" },
+    modifiedBy: { name: "Unknow User", role: "Teacher", date: "2 June 2025, 2:30 PM" },
+    comments: 0,
+    usage: 0,
+    lastUsed: "Never",
     questionType: "truefalse",
+    questionText: "Determine if HTML alone can create dynamic, interactive web pages.",
+    tags: ["html"], 
     correctAnswer: "false",
     feedbackTrue: "Incorrect. HTML is a markup language for structure, not dynamic behavior.",
     feedbackFalse: "Correct! HTML provides structure but needs JavaScript for dynamic behavior.",
     // tags: ["html", "web development", "medium", "exam"], // Added tags
-    tags: ["html"], 
-    status: "draft",
-    version: "v1",
-    createdBy: { name: "Unknow User", role: "Teacher", date: "2 June 2025, 2:30 PM" },
-    comments: 0,
-    usage: 0,
-    lastUsed: "Never",
-    modifiedBy: { name: "Unknow User", role: "Teacher", date: "2 June 2025, 2:30 PM" },
     history: [{ version: "v1", date: "2 June 2025", author: "Unknow User", changes: "Initial creation" }]
-  }
+  },
+    //   {
+    //   id: 3196134,
+    //   title: "asfgaegWf (copy)",
+    //   status: "ready",
+    //   version: "v2",
+    //   createdBy: { name: "TEP PISEY", role: "", date: "13 May 2025, 9:48 AM" },
+    //   modifiedBy: { name: "TEP PISEY", role: "", date: "13 May 2025, 9:48 AM" },
+    //   comments: 0,
+    //   usage: 1,
+    //   lastUsed: "Never",
+    //   questionType: "multichoice",
+    //   questionText: "Multiple choice question example",
+    //   tags: [],
+    //   idNumber: "",
+    //   options: ["Choice 1", "Choice 2", "Choice 3", "Choice 4"],
+    //   correctAnswers: ["Choice 2"],
+    //   history: [
+    //     { version: "v1", date: "13 May 2025", author: "TEP PISEY", changes: "Initial creation" },
+    //     { version: "v2", date: "13 May 2025", author: "TEP PISEY", changes: "Updated question text" }
+    //   ]
+    // },
+    
+    // {
+    //   id: 3196130,
+    //   title: "bb",
+    //   status: "ready",
+    //   version: "v6",
+    //   createdBy: { name: "TEP PISEY", role: "", date: "9 May 2025, 4:02 PM" },
+    //   modifiedBy: { name: "TEP PISEY", role: "", date: "9 May 2025, 4:02 PM" },
+    //   comments: 0,
+    //   usage: 1,
+    //   lastUsed: "Never",
+    //   questionType: "multichoice",
+    //   questionText: "Another question example",
+    //   tags: ["L1"],
+    //   idNumber: "01",
+    //   options: ["Answer A", "Answer B", "Answer C"],
+    //   correctAnswers: ["Answer A"],
+    //   history: [
+    //     { version: "v1", date: "9 May 2025", author: "TEP PISEY", changes: "Initial creation" },
+    //     { version: "v6", date: "9 May 2025", author: "TEP PISEY", changes: "Multiple updates" }
+    //   ]
+    // },
+    // {
+    //   id: 3196137,
+    //   title: "ergwe",
+    //   status: "ready",
+    //   version: "v1",
+    //   createdBy: { name: "TEP PISEY", role: "", date: "21 May 2025, 9:27 AM" },
+    //   modifiedBy: { name: "TEP PISEY", role: "", date: "21 May 2025, 9:27 AM" },
+    //   comments: 0,
+    //   usage: 0,
+    //   lastUsed: "Never",
+    //   questionType: "truefalse",
+    //   questionText: "True or false question",
+    //   tags: [],
+    //   idNumber: "",
+    //   correctAnswer: "true",
+    //   feedbackTrue: "Correct!",
+    //   feedbackFalse: "Incorrect!",
+    //   history: [
+    //     { version: "v1", date: "21 May 2025", author: "TEP PISEY", changes: "Initial creation" }
+    //   ]
+    // },
 ];

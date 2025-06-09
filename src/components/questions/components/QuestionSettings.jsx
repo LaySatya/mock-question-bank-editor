@@ -1,4 +1,7 @@
+// ============================================================================
 // components/questions/components/QuestionSettings.jsx
+// ============================================================================
+
 import React from 'react';
 import { FormField, NumberInput } from './SharedComponents';
 
@@ -9,7 +12,7 @@ const QuestionSettings = ({ defaultMark, penaltyFactor, onUpdateField }) => (
         value={defaultMark}
         onChange={value => onUpdateField('defaultMark', value)}
         min={0}
-        step={0.1}
+        step={1}
         className="w-full"
       />
     </FormField>
