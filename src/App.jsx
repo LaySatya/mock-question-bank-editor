@@ -7,6 +7,7 @@ import ManageUsers from './pages/ManageUsers';
 import LoginPage from './pages/LoginPage';
 import { logoutUser } from './api/userapi';
 import './styles/moodle-question-bank.css';
+
 const App = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -17,21 +18,28 @@ const App = () => {
   // Check for existing authentication on app load
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
+    const usernameoremail = localStorage.getItem('usernameoremail');
     
-    if (token && username) {
+    if (token && usernameoremail && usernameoremail !== 'undefined') {
       setIsAuthenticated(true);
-      setCurrentUser({ token, username });
+      setCurrentUser({ token, username: usernameoremail });
+    } else if (token && (!usernameoremail || usernameoremail === 'undefined')) {
+      // Clean up if we have invalid data
+      localStorage.removeItem('token');
+      localStorage.removeItem('usernameoremail');
     }
     setIsLoading(false);
   }, []);
 
-  const handleLogin = (token, username) => {
+  const handleLogin = (token, usernameoremail) => {
+    // Ensure we have a valid username
+    const validUsername = usernameoremail && usernameoremail !== 'undefined' ? usernameoremail : 'User';
+    
     localStorage.setItem('token', token);
-    localStorage.setItem('username', username);
+    localStorage.setItem('usernameoremail', validUsername);
     setIsAuthenticated(true);
-    setCurrentUser({ token, username });
-    navigate('/question-bank'); // ✅ FIXED: Now matches your route
+    setCurrentUser({ token, username: validUsername });
+    navigate('/question-bank'); 
   };
 
   const handleLogout = async () => {
@@ -41,7 +49,7 @@ const App = () => {
       console.error('API logout error:', error);
     } finally {
       localStorage.removeItem('token');
-      localStorage.removeItem('username');
+      localStorage.removeItem('usernameoremail');
       setIsAuthenticated(false);
       setCurrentUser(null);
       

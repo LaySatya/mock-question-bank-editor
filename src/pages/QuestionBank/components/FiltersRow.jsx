@@ -100,7 +100,7 @@ const FiltersRow = ({
     }
   };
 
-  // Alternative: Fetch tags from a custom endpoint that returns all tags
+  // Alternative: Fetch tags from a custom endpoint that returns all tags api
   const fetchAllTagsFromAPI = async () => {
     try {
       setLoadingTags(true);

@@ -44,14 +44,14 @@ const QuestionsTable = ({
 
   // FIXED: Enhanced tag rendering with better debugging
   const renderTags = (question) => {
-    console.log(`🏷️ Rendering tags for question ${question.id}:`, {
-      tags: question.tags,
-      tagsType: typeof question.tags,
-      tagsLength: Array.isArray(question.tags) ? question.tags.length : 'not array'
-    });
+    // console.log(` Rendering tags for question ${question.id}:`, {
+    //   tags: question.tags,
+    //   tagsType: typeof question.tags,
+    //   tagsLength: Array.isArray(question.tags) ? question.tags.length : 'not array'
+    // });
 
     if (!question.tags || !Array.isArray(question.tags) || question.tags.length === 0) {
-      console.log(`❌ No tags to render for question ${question.id}`);
+      // console.log(` No tags to render for question ${question.id}`);
       return null;
     }
 
@@ -63,7 +63,7 @@ const QuestionsTable = ({
             const processedTag = processTag(tag);
             const uniqueKey = `${question.id}-tag-${processedTag.id}-${index}`;
             
-            console.log(`🏷️ Processing tag ${index}:`, { original: tag, processed: processedTag, key: uniqueKey });
+            console.log(` Processing tag ${index}:`, { original: tag, processed: processedTag, key: uniqueKey });
             
             return (
               <li key={uniqueKey} style={{ display: 'inline-block', marginRight: '4px' }}>
@@ -521,8 +521,17 @@ const QuestionsTable = ({
                         </a>
                         {openActionDropdown === question.id && (
                           <div className="dropdown-menu menu dropdown-menu-right" role="menu">
-                            <a href="#" className="dropdown-item menu-action" role="menuitem" tabIndex="-1" 
-                              onClick={() => { onEdit(question); setOpenActionDropdown(null); }}>
+                             <a
+                              href="#"
+                              className="dropdown-item menu-action"
+                              role="menuitem"
+                              tabIndex="-1"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                onEdit(question);
+                                setOpenActionDropdown(null);
+                              }}
+                            >
                               <i className="fa fa-cog"></i>
                               <span className="menu-action-text">Edit question</span>
                             </a>

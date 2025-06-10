@@ -7,23 +7,36 @@ const LoginForm = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+   
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+  
+    // Add this check before calling loginUser
+    if (!username || !password) {
+      setError('Username and password are required');
+      return;
+    }
+  
+    console.log('Submitting login:', { username, password });
     setIsLoading(true);
-
+  
     try {
       const response = await loginUser(username, password);
+      console.log('Login response:', response);
       
-      // Save token and username to localStorage
+      // Save token to localStorage
       localStorage.setItem('token', response.token);
-      localStorage.setItem('username', response.username);
-
+      
+      // Use the actual username from response, fallback to input username
+      const actualUsername = response.username || response.usernameoremail || response.user || username;
+      localStorage.setItem('usernameoremail', actualUsername);
+  
       // Call onLogin to update auth state and navigate
       if (onLogin) {
-        onLogin(response.token, response.username);
+        onLogin(response.token, actualUsername); 
       }
-
+  
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
       console.error('Login error:', err);
@@ -31,6 +44,7 @@ const LoginForm = ({ onLogin }) => {
       setIsLoading(false);
     }
   };
+ 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -52,16 +66,16 @@ const LoginForm = ({ onLogin }) => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="usernameoremail" className="block text-sm font-medium text-gray-700">
               Username or Email
             </label>
             <input
               type="text"
-              id="username"
+              id="usernameoremail"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
-              autoComplete="username"
+              autoComplete="usernameoremail"
               required
               disabled={isLoading}
             />

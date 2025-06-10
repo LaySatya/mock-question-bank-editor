@@ -282,7 +282,7 @@ const TopButtonsRow = ({
 
   return (
     <div className="top-buttons-container">
-      <style jsx>{`
+      <style >{`
         .top-buttons-container {
           background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
           border-bottom: 2px solid #e9ecef;

@@ -1,10 +1,22 @@
 import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8000/api/user';
+const API_URL = 'http://127.0.0.1:8000/api/users';
 
 export const loginUser = async (username, password) => {
   try {
-    const response = await axios.post(`${API_URL}`, { username, password });
+    const params = new URLSearchParams();
+    params.append('usernameoremail', username); 
+    params.append('password', password);
+
+    const response = await axios.post(
+      `${API_URL}`,
+      params,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : new Error('Network error');

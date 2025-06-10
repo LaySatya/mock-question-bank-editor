@@ -5,11 +5,11 @@ import { XMLParser } from 'fast-xml-parser';
 export const useQuestionBank = (initialQuestions = []) => {
   const [questions, setQuestions] = useState(initialQuestions);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [username, setUsername] = useState(localStorage.getItem('username') || "Unknown User");
+  const [username, setUsername] = useState(localStorage.getItem('usernameoremail') || "Unknown User");
 
   useEffect(() => {
     const handleStorage = () => {
-      setUsername(localStorage.getItem('username') || "Unknown User");
+      setUsername(localStorage.getItem('usernameoremail') || "Unknown User");
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
