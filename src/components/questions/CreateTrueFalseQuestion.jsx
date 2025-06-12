@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, ChevronDown, AlertCircle } from 'lucide-react';
 import { useTrueFalseForm } from './hooks/useTrueFalseForm';
 import { useBulkTrueFalseEdit } from './hooks/useBulkTrueFalseEdit';
+import GlobalBulkEditPanel from './components/GlobalBulkEditPanel';
 import { 
   TagDropdown, 
   TextEditor, 
@@ -43,13 +44,68 @@ const CreateTrueFalseQuestion = ({
     toggleBulkTagDropdown
   } = useBulkTrueFalseEdit(questionsToEdit, isBulk);
 
+
+    const [globalBulkChanges, setGlobalBulkChanges] = useState({
+    status: '',
+    defaultMark: '',
+    penaltyFactor: '',
+    generalFeedback: '',
+    feedbackCorrect: '',
+    feedbackIncorrect: '',
+    category: '',
+    tags: {
+      add: [],
+      remove: []
+    },
+    showInstructions: '',
+    version: '',
+    modifiedBy: ''
+  });
+  
+  const [pendingChanges, setPendingChanges] = useState({});
+  
+  const handleGlobalBulkChange = (field, value) => {
+    setGlobalBulkChanges(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setPendingChanges(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  const handleGlobalTagOperation = (operation, tag) => {
+    setGlobalBulkChanges(prev => {
+      const tags = { ...prev.tags };
+      if (operation === 'add') {
+        tags.add = [...(tags.add || []), tag];
+        tags.remove = (tags.remove || []).filter(t => t !== tag);
+      } else if (operation === 'remove') {
+        tags.remove = [...(tags.remove || []), tag];
+        tags.add = (tags.add || []).filter(t => t !== tag);
+      }
+      return { ...prev, tags };
+    });
+    setPendingChanges(prev => ({
+      ...prev,
+      tags: globalBulkChanges.tags
+    }));
+  };
+  
+  const applyGlobalBulkChanges = () => {
+    // Implement your logic to apply global changes to all bulkQuestions
+    // For now, just log or update as needed
+    // Example:
+    // onSave(bulkQuestions.map(q => ({ ...q, ...globalBulkChanges })));
+  };
   const [expandedSections, setExpandedSections] = useState({
     general: true,
     multipleTries: false,
     tags: false
   });
   const [allExpanded, setAllExpanded] = useState(false);
-
+const [bulkEditMode, setBulkEditMode] = useState('global'); // global or individual
   // Reset form when question changes
   useEffect(() => {
     resetForm(existingQuestion);
@@ -135,21 +191,65 @@ const CreateTrueFalseQuestion = ({
           allExpanded={allExpanded}
         />
         
-        {/* Content */}
-        <div className="flex-grow overflow-y-auto">
-          <div className="p-6">
-            <div className="max-w-5xl mx-auto space-y-6">
-              {isBulk ? (
-                <BulkEditForm
-                  questions={bulkQuestions}
-                  tagDropdowns={bulkTagDropdowns}
-                  onBulkChange={handleBulkChange}
-                  onBulkTagToggle={handleBulkTagToggle}
-                  onToggleBulkTagDropdown={toggleBulkTagDropdown}
-                  correctAnswerOptions={correctAnswerOptions}
-                  statusOptions={statusOptions}
-                  showInstructionsOptions={showInstructionsOptions}
-                />
+           {/* Content */}
+      <div className="flex-grow overflow-y-auto">
+        <div className="p-6">
+          <div className="max-w-5xl mx-auto space-y-6">
+            {/* ADD THE MODE SWITCH HERE */}
+            {isBulk && (
+              <div className="flex items-center justify-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Edit Mode:</span>
+                <div className="flex bg-white rounded-lg p-1 border border-gray-200">
+                  <button
+                    onClick={() => setBulkEditMode('global')}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      bulkEditMode === 'global'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Global Changes
+                  </button>
+                  <button
+                    onClick={() => setBulkEditMode('individual')}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      bulkEditMode === 'individual'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Individual Questions
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Here is  BULK/INDIVIDUAL FORM LOGIC */}
+               {isBulk ? (
+                <>
+                  {/* Bulk edit mode switch UI goes here */}
+                  {bulkEditMode === 'global' ? (
+                    <GlobalBulkEditPanel
+                      globalBulkChanges={globalBulkChanges}
+                      pendingChanges={pendingChanges}
+                      onGlobalBulkChange={handleGlobalBulkChange}
+                      onGlobalTagOperation={handleGlobalTagOperation}
+                      onApplyGlobalChanges={applyGlobalBulkChanges}
+                      questionCount={bulkQuestions.length}
+                      selectedQuestions={bulkQuestions}
+                    />
+                  ) : (
+                    <BulkEditForm
+                      questions={bulkQuestions}
+                      tagDropdowns={bulkTagDropdowns}
+                      onBulkChange={handleBulkChange}
+                      onBulkTagToggle={handleBulkTagToggle}
+                      onToggleBulkTagDropdown={toggleBulkTagDropdown}
+                      correctAnswerOptions={correctAnswerOptions}
+                      statusOptions={statusOptions}
+                      showInstructionsOptions={showInstructionsOptions}
+                    />
+                  )}
+                </>
               ) : (
                 <SingleEditForm
                   question={question}

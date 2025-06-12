@@ -6,7 +6,7 @@ import { X, Edit, Clock, User, FileText, Save, Send, CheckSquare } from 'lucide-
 import CreateQuestionModal from '../../../components/modals/CreateQuestionModal';
 import CreateTrueFalseQuestion from '../../../components/questions/CreateTrueFalseQuestion';
 import CreateMultipleChoiceQuestion from '../../../components/questions/CreateMultipleChoiceQuestion';
-import BulkEditQuestionsModal from '../../../components/modals/BulkEditQuestionsModal';
+import BulkEditQuestionsModal from '../../../components/modals/BulkEditModal';
 
 // Save Confirmation Modal
 const SaveConfirmationModal = ({ questionId, onConfirm, onCancel }) => {
@@ -91,12 +91,12 @@ const HistoryModal = ({ question, onClose }) => {
 const PreviewModal = ({ question, onClose, onEdit }) => {
   if (!question) return null;
 
-  // 🔥 FIXED: Check both qtype and questionType for multiple choice questions
+  //  FIXED: Check both qtype and questionType for multiple choice questions
   if (question.qtype === 'multichoice' || question.questionType === 'multiple') {
     return <QuizStylePreview question={question} onClose={onClose} onEdit={onEdit} />;
   }
 
-  // 🔥 FIXED: Check both qtype and questionType for true/false questions
+  //  FIXED: Check both qtype and questionType for true/false questions
   if (question.qtype === 'truefalse' || question.questionType === 'truefalse') {
     return <TrueFalsePreview question={question} onClose={onClose} onEdit={onEdit} />;
   }
@@ -628,7 +628,7 @@ const TraditionalPreview = ({ question, onClose, onEdit }) => {
             <div>
               <h3 className="font-bold mb-2">Question Details</h3>
               <div className="space-y-1">
-                {/* 🔥 FIXED: Show both qtype and questionType */}
+                {/*  FIXED: Show both qtype and questionType */}
                 <p><strong>Type:</strong> {question.qtype || question.questionType}</p>
                 <p><strong>Status:</strong> {question.status}</p>
                 <p><strong>Created by:</strong> {question.createdBy?.name}</p>

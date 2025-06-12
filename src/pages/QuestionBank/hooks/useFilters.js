@@ -1,4 +1,4 @@
-// hooks/useFilters.js
+// hooks/useFilters.js - Corrected version for API integration
 import { useState, useMemo } from 'react';
 
 export const useFilters = (questions) => {
@@ -10,27 +10,37 @@ export const useFilters = (questions) => {
     type: 'All'
   });
 
+  // Extract all unique tags from questions for the dropdown
   const allTags = useMemo(() => {
-    return Array.from(
-      new Set(
-        questions
-          .flatMap(q => Array.isArray(q.tags) ? q.tags : [])
-          .filter(Boolean)
-      )
-    );
+    const tags = new Set();
+    
+    questions.forEach(question => {
+      if (question.tags && Array.isArray(question.tags)) {
+        question.tags.forEach(tag => {
+          if (tag && typeof tag === 'string') {
+            tags.add(tag.toLowerCase().trim());
+          }
+        });
+      }
+    });
+    
+    return Array.from(tags).sort();
   }, [questions]);
 
-   const filteredQuestions = useMemo(() => {
-    return questions.filter(q => {
-      const text = String(q.title || q.name || q.questiontext || '');
-      return (
-        text.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        (filters.type === 'All' || q.questionType === filters.type) &&
-        (filters.status === 'All' || q.status === filters.status) &&
-        (tagFilter === 'All' || (Array.isArray(q.tags) && q.tags.includes(tagFilter)))
-      );
-    });
-  }, [questions, searchQuery, filters, tagFilter]);
+  //  CRITICAL FIX: No client-side filtering when using API filtering
+  // The API already returns filtered results, so we just pass through the questions
+  // This prevents double-filtering and ensures API results are displayed correctly
+  const filteredQuestions = questions;
+
+  console.log(' useFilters hook state:', {
+    searchQuery,
+    filters,
+    tagFilter,
+    totalQuestions: questions.length,
+    filteredQuestions: filteredQuestions.length,
+    allTags: allTags.length
+  });
+
   return {
     searchQuery,
     setSearchQuery,
@@ -38,7 +48,7 @@ export const useFilters = (questions) => {
     setFilters,
     tagFilter,
     setTagFilter,
-    filteredQuestions,
+    filteredQuestions, // This now just returns the API-filtered questions
     allTags
   };
 };

@@ -1,16 +1,20 @@
-// components/questions/components/GlobalBulkEditPanel.jsx - CLEAN VERSION
+// components/questions/components/GlobalBulkEditPanel.jsx - Fixed to show only existing tags
 import React, { useState } from 'react';
 import { ChevronDown, AlertCircle, Users, Edit3, Globe, Zap, Check, X } from 'lucide-react';
-import { Select, Checkbox, TextEditor } from './SharedComponents';
-import { AVAILABLE_TAGS } from '../constants/questionConstants';
-
+import { TextEditor } from './SharedComponents'; // Your existing SharedComponents
+import { useBulkEditAPI } from '../hooks/useBulkEditAPI';
+import { TagManager, CategorySelector, BulkActionsPanel } from '../shared/BulkEditComponents';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTags, faFolder, faChartBar, faSpinner } from '@fortawesome/free-solid-svg-icons';
 const GlobalBulkEditPanel = ({ 
   globalBulkChanges, 
   pendingChanges, 
   onGlobalBulkChange, 
   onGlobalTagOperation, 
   onApplyGlobalChanges,
-  questionCount 
+  questionCount = selectedQuestions?.length,
+  selectedQuestions = [],
+
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     basicSettings: true,
@@ -18,6 +22,26 @@ const GlobalBulkEditPanel = ({
     feedback: false,
     metadata: false
   });
+
+  //  PASS ALL QUESTIONS to analyze existing tags
+const {
+  tags,
+  tagsLoading,
+  tagsError,
+  addCustomTag,
+  refreshTags,
+  categories,
+  categoriesLoading,
+  categoriesError,
+  refreshCategories,
+  existingTags, // <-- tags from selectedQuestions
+  hasExistingTags,
+  bulkLoading,
+  bulkError,
+  isLoading,
+  refreshAll,
+} = useBulkEditAPI(selectedQuestions);
+  // } = useBulkEditAPI(allQuestions); // Pass all questions for analysis
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -49,24 +73,41 @@ const GlobalBulkEditPanel = ({
     </button>
   );
 
-  const CATEGORIES = [
-    { value: 'course-1', label: 'Introduction to Programming' },
-    { value: 'course-2', label: 'Data Structures' },
-    { value: 'course-3', label: 'Database Systems' },
-    { value: 'course-4', label: 'Web Development' }
-  ];
-
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
       {/* Header */}
       <div className="px-6 py-6 border-b border-gray-100">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl">
-            <Zap size={24} className="text-gray-700" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl">
+              <Zap size={24} className="text-gray-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">The same type Bulk Edit</h2>
+              <p className="text-gray-600 mt-1">Apply changes to all {questionCount} questions at once</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Global Bulk Edit</h2>
-            <p className="text-gray-600 mt-1">Apply changes to all {questionCount} questions at once</p>
+          
+          {/* API Status Indicators */}
+          <div className="flex items-center space-x-4 text-sm">
+            {isLoading && (
+              <span className="text-blue-600 flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading API data...
+              </span>
+            )}
+            {(tagsError || categoriesError) && (
+              <span className="text-red-600 flex items-center">
+                <AlertCircle size={16} className="mr-1" />
+                API Error
+              </span>
+            )}
+            {!isLoading && !tagsError && !categoriesError && (
+              <span className="text-green-600 flex items-center">
+                <Check size={16} className="mr-1" />
+                API Connected
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -89,17 +130,17 @@ const GlobalBulkEditPanel = ({
                   <label className="block text-sm font-semibold text-gray-900 mb-3">
                     Question Status
                   </label>
-                  <Select
-                    value={globalBulkChanges.status}
-                    onChange={(value) => onGlobalBulkChange('status', value)}
-                    options={[
-                      { value: '', label: 'No change' },
-                      { value: 'Draft', label: 'Draft' },
-                      { value: 'Ready', label: 'Ready' },
-                      { value: 'Archived', label: 'Archived' }
-                    ]}
-                    className="w-full"
-                  />
+                  <select
+                    value={globalBulkChanges?.status || ''}
+                    onChange={(e) => onGlobalBulkChange('status', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm"
+                  >
+                    <option value="">No change</option>
+                    <option value="draft">Draft</option>
+                    <option value="ready">Ready</option>
+                    <option value="published">Published</option>
+                    <option value="archived">Archived</option>
+                  </select>
                 </div>
 
                 <div>
@@ -108,7 +149,7 @@ const GlobalBulkEditPanel = ({
                   </label>
                   <input
                     type="number"
-                    value={globalBulkChanges.defaultMark}
+                    value={globalBulkChanges?.defaultMark || ''}
                     onChange={(e) => onGlobalBulkChange('defaultMark', e.target.value)}
                     placeholder="No change"
                     min="0"
@@ -118,17 +159,15 @@ const GlobalBulkEditPanel = ({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
-                    Category
-                  </label>
-                  <Select
-                    value={globalBulkChanges.category}
+                  <CategorySelector
+                    categories={categories}
+                    selectedCategory={globalBulkChanges?.category || ''}
                     onChange={(value) => onGlobalBulkChange('category', value)}
-                    options={[
-                      { value: '', label: 'No change' },
-                      ...CATEGORIES
-                    ]}
-                    className="w-full"
+                    loading={categoriesLoading}
+                    error={categoriesError}
+                    onRefresh={refreshCategories}
+                    placeholder="No change"
+                    label="Category"
                   />
                 </div>
 
@@ -138,7 +177,7 @@ const GlobalBulkEditPanel = ({
                   </label>
                   <input
                     type="number"
-                    value={globalBulkChanges.penaltyFactor}
+                    value={globalBulkChanges?.penaltyFactor || ''}
                     onChange={(e) => onGlobalBulkChange('penaltyFactor', e.target.value)}
                     placeholder="No change"
                     min="0"
@@ -152,16 +191,15 @@ const GlobalBulkEditPanel = ({
                   <label className="block text-sm font-semibold text-gray-900 mb-3">
                     Show Instructions
                   </label>
-                  <Select
-                    value={globalBulkChanges.showInstructions === null ? '' : globalBulkChanges.showInstructions.toString()}
-                    onChange={(value) => onGlobalBulkChange('showInstructions', value === '' ? null : value === 'true')}
-                    options={[
-                      { value: '', label: 'No change' },
-                      { value: 'true', label: 'Yes' },
-                      { value: 'false', label: 'No' }
-                    ]}
-                    className="w-full"
-                  />
+                  <select
+                    value={globalBulkChanges?.showInstructions === null ? '' : globalBulkChanges?.showInstructions?.toString() || ''}
+                    onChange={(e) => onGlobalBulkChange('showInstructions', e.target.value === '' ? null : e.target.value === 'true')}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm"
+                  >
+                    <option value="">No change</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -175,55 +213,25 @@ const GlobalBulkEditPanel = ({
             isExpanded={expandedSections.tagsManagement}
             onToggle={() => toggleSection('tagsManagement')}
             icon={Users}
-            count={`+${globalBulkChanges.tags.add.length} -${globalBulkChanges.tags.remove.length}`}
+            count={`+${globalBulkChanges?.tags?.add?.length || 0} -${globalBulkChanges?.tags?.remove?.length || 0}`}
           />
           
           {expandedSections.tagsManagement && (
             <div className="px-6 pb-6 border-t border-gray-100">
-              <div className="pt-6 space-y-8">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Add Tags to All Questions</h4>
-                  <div className="flex flex-wrap gap-3">
-                    {AVAILABLE_TAGS.map(tag => (
-                      <button
-                        key={tag}
-                        onClick={() => onGlobalTagOperation('add', tag)}
-                        className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                          globalBulkChanges.tags.add.includes(tag)
-                            ? 'bg-gray-900 text-white border-gray-900'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                        }`}
-                      >
-                        {tag}
-                        {globalBulkChanges.tags.add.includes(tag) && (
-                          <Check size={14} className="ml-2" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Remove Tags from All Questions</h4>
-                  <div className="flex flex-wrap gap-3">
-                    {AVAILABLE_TAGS.map(tag => (
-                      <button
-                        key={tag}
-                        onClick={() => onGlobalTagOperation('remove', tag)}
-                        className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                          globalBulkChanges.tags.remove.includes(tag)
-                            ? 'bg-gray-700 text-white border-gray-700'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                        }`}
-                      >
-                        {tag}
-                        {globalBulkChanges.tags.remove.includes(tag) && (
-                          <X size={14} className="ml-2" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="pt-6">
+                <TagManager
+                  availableTags={tags}
+                  existingTags={existingTags} // 🔧 Now contains tags from all questions
+                  selectedAddTags={globalBulkChanges?.tags?.add || []}
+                  selectedRemoveTags={globalBulkChanges?.tags?.remove || []}
+                  onTagOperation={onGlobalTagOperation}
+                  onAddCustomTag={addCustomTag}
+                  loading={tagsLoading}
+                  error={tagsError}
+                  onRefresh={refreshTags}
+                  showSmartRemoval={true} // 🔧 CHANGED: Now use smart removal for global too
+                  customTagPlaceholder="Enter new tag for global use"
+                />
               </div>
             </div>
           )}
@@ -247,7 +255,7 @@ const GlobalBulkEditPanel = ({
                     General Feedback
                   </label>
                   <TextEditor
-                    value={globalBulkChanges.generalFeedback}
+                    value={globalBulkChanges?.generalFeedback || ''}
                     onChange={(value) => onGlobalBulkChange('generalFeedback', value)}
                     placeholder="Leave empty for no change"
                     minHeight="100px"
@@ -259,7 +267,7 @@ const GlobalBulkEditPanel = ({
                     Feedback for Correct Answers
                   </label>
                   <TextEditor
-                    value={globalBulkChanges.feedbackCorrect}
+                    value={globalBulkChanges?.feedbackCorrect || ''}
                     onChange={(value) => onGlobalBulkChange('feedbackCorrect', value)}
                     placeholder="Leave empty for no change"
                     minHeight="100px"
@@ -271,7 +279,7 @@ const GlobalBulkEditPanel = ({
                     Feedback for Incorrect Answers
                   </label>
                   <TextEditor
-                    value={globalBulkChanges.feedbackIncorrect}
+                    value={globalBulkChanges?.feedbackIncorrect || ''}
                     onChange={(value) => onGlobalBulkChange('feedbackIncorrect', value)}
                     placeholder="Leave empty for no change"
                     minHeight="100px"
@@ -301,7 +309,7 @@ const GlobalBulkEditPanel = ({
                   </label>
                   <input
                     type="text"
-                    value={globalBulkChanges.version}
+                    value={globalBulkChanges?.version || ''}
                     onChange={(e) => onGlobalBulkChange('version', e.target.value)}
                     placeholder="e.g., v2.0"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm"
@@ -314,7 +322,7 @@ const GlobalBulkEditPanel = ({
                   </label>
                   <input
                     type="email"
-                    value={globalBulkChanges.modifiedBy}
+                    value={globalBulkChanges?.modifiedBy || ''}
                     onChange={(e) => onGlobalBulkChange('modifiedBy', e.target.value)}
                     placeholder="email@example.com"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm"
@@ -328,13 +336,35 @@ const GlobalBulkEditPanel = ({
         {/* Changes Preview and Actions */}
         <div className="border border-gray-200 rounded-lg">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-900">Changes Summary</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Changes Summary</h3>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                     {tags.length > 0 && (
+                  <span>
+                    <FontAwesomeIcon icon={faTags} className="mr-1" />
+                    {tags.length} tags available
+                  </span>
+                )}
+                {hasExistingTags && (
+                  <span>
+                    <FontAwesomeIcon icon={faChartBar} className="mr-1" />
+                    {existingTags.length} tags in use
+                  </span>
+                )}
+                {categories.length > 0 && (
+                  <span>
+                    <FontAwesomeIcon icon={faFolder} className="mr-1" />
+                    {categories.length} categories available
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
           <div className="p-6">
-            {Object.keys(pendingChanges).length > 0 ? (
+            {Object.keys(pendingChanges || {}).length > 0 ? (
               <div className="space-y-3 mb-6">
                 <p className="text-sm font-medium text-gray-900 mb-3">
-                  The following changes will be applied:
+                  The following changes will be applied to ALL questions:
                 </p>
                 {Object.values(pendingChanges).map((change, index) => (
                   <div key={index} className="flex items-start space-x-3 text-sm text-gray-700">
@@ -355,23 +385,52 @@ const GlobalBulkEditPanel = ({
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
               <div className="text-sm text-gray-600">
-                {Object.keys(pendingChanges).length > 0 && (
+                {Object.keys(pendingChanges || {}).length > 0 && (
                   <span>
                     Ready to apply <span className="font-semibold">{Object.keys(pendingChanges).length}</span> change{Object.keys(pendingChanges).length !== 1 ? 's' : ''} to <span className="font-semibold">{questionCount}</span> question{questionCount !== 1 ? 's' : ''}
                   </span>
                 )}
+                {bulkError && (
+                  <span className="text-red-600 flex items-center mt-2">
+                    <AlertCircle size={16} className="mr-1" />
+                    {bulkError}
+                  </span>
+                )}
               </div>
-              <button
-                onClick={onApplyGlobalChanges}
-                disabled={Object.keys(pendingChanges).length === 0}
-                className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
-                  Object.keys(pendingChanges).length > 0
-                    ? 'bg-gray-900 text-white hover:bg-gray-800 shadow-sm'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                Apply Global Changes
-              </button>
+              <div className="flex items-center space-x-3">
+                 <button
+                  onClick={refreshAll}
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-400 flex items-center"
+                >
+                  <span className="w-4 h-4 mr-2 flex items-center justify-center">
+                    {isLoading ? (
+                      <FontAwesomeIcon icon={faSpinner} spin />
+                    ) : (
+                      <FontAwesomeIcon icon={faSpinner} />
+                    )}
+                  </span>
+                  Refresh API Data
+                </button>
+                <button
+                  onClick={onApplyGlobalChanges}
+                  disabled={Object.keys(pendingChanges || {}).length === 0 || bulkLoading || isLoading}
+                  className={`px-6 py-3 rounded-lg font-semibold text-sm transition-all ${
+                    Object.keys(pendingChanges || {}).length > 0 && !bulkLoading && !isLoading
+                      ? 'bg-gray-900 text-white hover:bg-gray-800 shadow-sm'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {bulkLoading ? (
+                    <span className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Applying Changes...
+                    </span>
+                  ) : (
+                    'Apply Global Changes'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

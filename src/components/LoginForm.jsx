@@ -7,36 +7,33 @@ const LoginForm = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-   
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
   
-    // Add this check before calling loginUser
-    if (!username || !password) {
+    // Trim whitespace
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+  
+    if (!trimmedUsername || !trimmedPassword) {
       setError('Username and password are required');
       return;
     }
   
-    console.log('Submitting login:', { username, password });
+    console.log('Submitting login:', { username: trimmedUsername, password: trimmedPassword });
     setIsLoading(true);
   
     try {
-      const response = await loginUser(username, password);
+      const response = await loginUser(trimmedUsername, trimmedPassword);
       console.log('Login response:', response);
-      
-      // Save token to localStorage
+  
       localStorage.setItem('token', response.token);
-      
-      // Use the actual username from response, fallback to input username
-      const actualUsername = response.username || response.usernameoremail || response.user || username;
+      const actualUsername = response.username || response.usernameoremail || response.user || trimmedUsername;
       localStorage.setItem('usernameoremail', actualUsername);
   
-      // Call onLogin to update auth state and navigate
       if (onLogin) {
-        onLogin(response.token, actualUsername); 
+        onLogin(response.token, actualUsername);
       }
-  
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
       console.error('Login error:', err);
@@ -76,7 +73,7 @@ const LoginForm = ({ onLogin }) => {
               onChange={(e) => setUsername(e.target.value)}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
               autoComplete="usernameoremail"
-              required
+              // required
               disabled={isLoading}
             />
           </div>
@@ -91,7 +88,7 @@ const LoginForm = ({ onLogin }) => {
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
               autoComplete="current-password"
-              required
+              
               disabled={isLoading}
             />
           </div>

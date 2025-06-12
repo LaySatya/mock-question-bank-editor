@@ -5,8 +5,8 @@ const API_URL = 'http://127.0.0.1:8000/api/users';
 export const loginUser = async (username, password) => {
   try {
     const params = new URLSearchParams();
-    params.append('usernameoremail', username); 
-    params.append('password', password);
+    params.append('usernameoremail', username);     
+    params.append('password', password);     
 
     const response = await axios.post(
       `${API_URL}`,
@@ -17,8 +17,19 @@ export const loginUser = async (username, password) => {
         },
       }
     );
+    
+    // Check if the backend says login failed
+    if (!response.data.status) {
+      throw new Error(response.data.message || 'Login failed');
+    }
+    
     return response.data;
   } catch (error) {
+    // If it's our custom error, throw it
+    if (error.message && !error.response) {
+      throw error;
+    }
+    // Otherwise handle HTTP errors
     throw error.response ? error.response.data : new Error('Network error');
   }
 };

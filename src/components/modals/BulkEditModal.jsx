@@ -1,5 +1,9 @@
-// components/modals/BulkEditModal.jsx - Enhanced bulk edit with Moodle styling
+// components/modals/BulkEditModal.jsx - Fixed imports for your structure
 import React, { useState, useEffect } from 'react';
+import { useBulkEditAPI } from '../questions/hooks/useBulkEditAPI';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTags, faFolder } from '@fortawesome/free-solid-svg-icons';
+import { TagManager, CategorySelector, BulkActionsPanel, ChangesPreview } from '../questions/shared/BulkEditComponents';
 
 const BulkEditModal = ({ 
   questions, 
@@ -13,6 +17,7 @@ const BulkEditModal = ({
     defaultMark: '',
     penaltyFactor: '',
     generalFeedback: '',
+    category: '',
     tags: {
       add: [],
       remove: []
@@ -21,6 +26,26 @@ const BulkEditModal = ({
 
   const [individualChanges, setIndividualChanges] = useState({});
   const [errors, setErrors] = useState({});
+
+  // 🔧 USE SHARED API HOOKS
+  const {
+    tags,
+    tagsLoading,
+    tagsError,
+    addCustomTag,
+    refreshTags,
+    categories,
+    categoriesLoading,
+    categoriesError,
+    refreshCategories,
+    existingTags,
+    hasExistingTags,
+    bulkUpdateStatus,
+    bulkLoading,
+    bulkError,
+    isLoading,
+    refreshAll
+  } = useBulkEditAPI(questions);
 
   // Initialize individual changes with current question data
   useEffect(() => {
@@ -32,6 +57,7 @@ const BulkEditModal = ({
         defaultMark: q.defaultMark || 1,
         penaltyFactor: q.penaltyFactor || 0,
         generalFeedback: q.generalFeedback || '',
+        category: q.category || '',
         tags: q.tags || []
       };
     });
@@ -83,6 +109,9 @@ const BulkEditModal = ({
       if (bulkChanges.generalFeedback) {
         updatedChanges[q.id].generalFeedback = bulkChanges.generalFeedback;
       }
+      if (bulkChanges.category) {
+        updatedChanges[q.id].category = bulkChanges.category;
+      }
       
       // Handle tags
       let newTags = [...updatedChanges[q.id].tags];
@@ -119,40 +148,39 @@ const BulkEditModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateChanges()) {
       alert('Please fix the validation errors before saving.');
       return;
     }
 
-    const updatedQuestions = questions.map(q => ({
-      ...q,
-      ...individualChanges[q.id],
-      version: `v${parseInt(q.version.substring(1)) + 1}`,
-      modifiedBy: {
-        name: username,
-        role: "",
-        date: new Date().toLocaleString()
-      },
-      history: [
-        ...q.history,
-        {
-          version: `v${parseInt(q.version.substring(1)) + 1}`,
-          date: new Date().toLocaleDateString(),
-          author: username,
-          changes: "Bulk edited"
-        }
-      ]
-    }));
+    try {
+      const updatedQuestions = questions.map(q => ({
+        ...q,
+        ...individualChanges[q.id],
+        version: `v${parseInt(q.version.substring(1)) + 1}`,
+        modifiedBy: {
+          name: username,
+          role: "",
+          date: new Date().toLocaleString()
+        },
+        history: [
+          ...q.history,
+          {
+            version: `v${parseInt(q.version.substring(1)) + 1}`,
+            date: new Date().toLocaleDateString(),
+            author: username,
+            changes: "Bulk edited"
+          }
+        ]
+      }));
 
-    onSave(updatedQuestions);
+      onSave(updatedQuestions);
+    } catch (error) {
+      console.error(' Save failed:', error);
+      alert(`Failed to save changes: ${error.message}`);
+    }
   };
-
-  const AVAILABLE_TAGS = [
-    'easy', 'medium', 'hard', 'programming', 'algorithms', 'databases', 
-    'networking', 'web development', 'security', 'python', 'java', 'javascript',
-    'quiz', 'exam', 'practice', 'assignment'
-  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-50">
@@ -161,7 +189,7 @@ const BulkEditModal = ({
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-              <span className="text-blue-600 font-bold">BULK</span>
+              <span className="text-blue-600 font-bold text-xs">BULK</span>
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Bulk Edit Questions</h2>
@@ -204,10 +232,14 @@ const BulkEditModal = ({
           {editMode === 'basic' ? (
             // Basic/Bulk Edit Mode
             <div className="space-y-8">
-              {/* Bulk Changes Section */}
-              <div className="bg-blue-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Apply to All Questions</h3>
-                
+              <BulkActionsPanel
+                title="Apply to Selected Questions"
+                description={`Make changes to all ${questions.length} selected questions at once`}
+                onApply={applyBulkChanges}
+                applyButtonText="Apply Changes to All Questions"
+                loading={bulkLoading}
+              >
+                {/* Basic Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -219,6 +251,8 @@ const BulkEditModal = ({
                       <option value="">No change</option>
                       <option value="ready">Ready</option>
                       <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                      <option value="archived">Archived</option>
                     </select>
                   </div>
                   
@@ -250,7 +284,20 @@ const BulkEditModal = ({
                   </div>
                 </div>
                 
-                <div className="mt-6">
+                {/* Category Selector */}
+                <CategorySelector
+                  categories={categories}
+                  selectedCategory={bulkChanges.category}
+                  onChange={(value) => handleBulkChange('category', value)}
+                  loading={categoriesLoading}
+                  error={categoriesError}
+                  onRefresh={refreshCategories}
+                  placeholder="No change"
+                  label="Category"
+                />
+                
+                {/* General Feedback */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">General Feedback</label>
                   <textarea
                     value={bulkChanges.generalFeedback}
@@ -261,91 +308,36 @@ const BulkEditModal = ({
                   />
                 </div>
                 
-                {/* Tags Management */}
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Tag Management</h4>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-2">Add Tags (to all questions)</label>
-                      <div className="flex flex-wrap gap-2">
-                        {AVAILABLE_TAGS.map(tag => (
-                          <button
-                            key={tag}
-                            onClick={() => handleTagOperation('add', tag)}
-                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                              bulkChanges.tags.add.includes(tag)
-                                ? 'bg-green-100 text-green-800 border border-green-300'
-                                : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-                            }`}
-                          >
-                            {tag}
-                            {bulkChanges.tags.add.includes(tag) && <span className="inline ml-1">[ADDED]</span>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-2">Remove Tags (from all questions)</label>
-                      <div className="flex flex-wrap gap-2">
-                        {AVAILABLE_TAGS.map(tag => (
-                          <button
-                            key={tag}
-                            onClick={() => handleTagOperation('remove', tag)}
-                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                              bulkChanges.tags.remove.includes(tag)
-                                ? 'bg-red-100 text-red-800 border border-red-300'
-                                : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-                            }`}
-                          >
-                            {tag}
-                            {bulkChanges.tags.remove.includes(tag) && <span className="inline ml-1">[REMOVE]</span>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-6">
-                  <button
-                    onClick={applyBulkChanges}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Apply Changes to All Questions
-                  </button>
-                </div>
-              </div>
+                {/* Tag Management */}
+                <TagManager
+                  availableTags={tags}
+                  existingTags={existingTags}
+                  selectedAddTags={bulkChanges.tags.add}
+                  selectedRemoveTags={bulkChanges.tags.remove}
+                  onTagOperation={handleTagOperation}
+                  onAddCustomTag={addCustomTag}
+                  loading={tagsLoading}
+                  error={tagsError}
+                  onRefresh={refreshTags}
+                  showSmartRemoval={true}
+                  customTagPlaceholder="Enter new tag name"
+                />
+              </BulkActionsPanel>
 
               {/* Preview Section */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview Changes</h3>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {questions.map(q => (
-                    <div key={q.id} className="bg-white rounded-md p-3 border border-gray-200">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{individualChanges[q.id]?.title || q.title}</h4>
-                          <div className="text-sm text-gray-600 mt-1">
-                            Status: <span className="font-medium">{individualChanges[q.id]?.status}</span> | 
-                            Mark: <span className="font-medium">{individualChanges[q.id]?.defaultMark}</span> | 
-                            Tags: <span className="font-medium">{individualChanges[q.id]?.tags?.length || 0}</span>
-                          </div>
-                        </div>
-                        <span className="text-xs text-gray-500">ID: {q.id}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ChangesPreview
+                questions={questions}
+                individualChanges={individualChanges}
+                title="Preview Changes"
+                maxHeight="16rem"
+              />
             </div>
           ) : (
             // Individual Edit Mode
             <div className="space-y-6">
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-center">
-                  <span className="text-yellow-600 mr-2">WARNING:</span>
+                  <span className="text-yellow-600 mr-2">⚠️</span>
                   <div>
                     <h3 className="text-sm font-medium text-yellow-800">Individual Edit Mode</h3>
                     <p className="text-sm text-yellow-700">Edit each question individually. Changes will only apply to the specific question you modify.</p>
@@ -386,6 +378,8 @@ const BulkEditModal = ({
                         >
                           <option value="ready">Ready</option>
                           <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                          <option value="archived">Archived</option>
                         </select>
                       </div>
                       
@@ -425,6 +419,20 @@ const BulkEditModal = ({
                       </div>
                     </div>
                     
+                    {/* Category for individual questions */}
+                    <div className="mt-4">
+                      <CategorySelector
+                        categories={categories}
+                        selectedCategory={individualChanges[q.id]?.category || ''}
+                        onChange={(value) => handleIndividualChange(q.id, 'category', value)}
+                        loading={categoriesLoading}
+                        error={categoriesError}
+                        placeholder="Select category..."
+                        label="Category"
+                        showNoChange={false}
+                      />
+                    </div>
+                    
                     <div className="mt-4">
                       <label className="block text-sm font-medium text-gray-700 mb-1">General Feedback</label>
                       <textarea
@@ -446,8 +454,22 @@ const BulkEditModal = ({
           <div className="text-sm text-gray-600">
             {Object.keys(errors).length > 0 && (
               <span className="text-red-600 flex items-center">
-                <span className="mr-1">ERROR:</span>
+                <span className="mr-1">
+                  <FontAwesomeIcon icon={faTimes} />
+                </span>
                 {Object.keys(errors).length} validation error{Object.keys(errors).length !== 1 ? 's' : ''}
+              </span>
+            )}
+             {tags.length > 0 && (
+              <span className="text-gray-500 ml-4">
+                <FontAwesomeIcon icon={faTags} className="mr-1" />
+                {tags.length} tags loaded from API
+              </span>
+            )}
+            {categories.length > 0 && (
+              <span className="text-gray-500 ml-4">
+                <FontAwesomeIcon icon={faFolder} className="mr-1" />
+                {categories.length} categories loaded
               </span>
             )}
           </div>
@@ -460,14 +482,14 @@ const BulkEditModal = ({
             </button>
             <button
               onClick={handleSave}
-              disabled={Object.keys(errors).length > 0}
+              disabled={Object.keys(errors).length > 0 || isLoading}
               className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                Object.keys(errors).length > 0
+                Object.keys(errors).length > 0 || isLoading
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              Save Changes
+              {isLoading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>

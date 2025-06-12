@@ -120,7 +120,7 @@ const QuestionsTable = ({
 
   // FIXED: Enhanced debugging for questions
   useEffect(() => {
-    console.log('🔍 QuestionsTable received questions:', {
+    console.log(' QuestionsTable received questions:', {
       questionsCount: questions?.length || 0,
       sampleQuestion: questions?.[0] ? {
         id: questions[0].id,

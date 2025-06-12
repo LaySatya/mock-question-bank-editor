@@ -30,7 +30,7 @@ const ChoiceEditor = ({
                 value={choice.text !== undefined ? choice.text : choice.answer || ''}
                 onChange={value => {
                   onUpdateChoice(index, 'text', value);
-                  onUpdateChoice(index, 'answer', value); // <-- add this line
+                  onUpdateChoice(index, 'answer', value); 
                 }}
                 placeholder=""
                 error={errors && errors[index]}

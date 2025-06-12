@@ -46,22 +46,20 @@ const CreateMultipleChoiceQuestion = ({
   } = useMultipleChoiceForm(question);
 
   // Enhanced bulk edit logic
+    // After your other hooks:
   const {
     bulkQuestions,
     bulkTagDropdowns,
     handleBulkChange,
-    handleBulkChoiceChange,
     handleBulkTagToggle,
     toggleBulkTagDropdown,
-    handleBulkAddChoice,
-    handleBulkRemoveChoice,
-    // New global bulk edit functionality
+    // Add these for global bulk edit:
     globalBulkChanges,
     pendingChanges,
     handleGlobalBulkChange,
     handleGlobalTagOperation,
     applyGlobalBulkChanges
-  } = useEnhancedBulkEdit(questionsToEdit, isBulk);
+  } = useBulkTrueFalseEdit(questionsToEdit, isBulk);
 
   const [expandedSections, setExpandedSections] = useState({
     general: true,
@@ -164,7 +162,6 @@ const CreateMultipleChoiceQuestion = ({
                       </button>
                     </div>
                   </div>
-
                   {bulkEditMode === 'global' ? (
                     <GlobalBulkEditPanel
                       globalBulkChanges={globalBulkChanges}
@@ -173,6 +170,7 @@ const CreateMultipleChoiceQuestion = ({
                       onGlobalTagOperation={handleGlobalTagOperation}
                       onApplyGlobalChanges={applyGlobalBulkChanges}
                       questionCount={bulkQuestions.length}
+                      selectedQuestions={bulkQuestions}   // <-- ADD THIS LINE!
                     />
                   ) : (
                     <BulkEditForm
