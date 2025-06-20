@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
-import QuestionBank from './pages/QuestionBank/QuestionBank';
+// ✅ FIXED: Updated import path for QuestionBank
+import QuestionBank from './features/questions/pages/QuestionBank';
 import ManageUsers from './pages/ManageUsers';
 import LoginPage from './pages/LoginPage';
 import { logoutUser } from './api/userapi';
@@ -53,13 +54,7 @@ const App = () => {
       setIsAuthenticated(false);
       setCurrentUser(null);
       
-      // You can change this to redirect to different pages:
-      // navigate('/login');           // Go to login page (current)
-      // navigate('/');                // Go to home page
-      // navigate('/goodbye');         // Go to custom goodbye page
-      // window.location.href = '/';   // Hard redirect to home
-      
-      navigate('/login'); // Current behavior
+      navigate('/login');
     }
   };
 

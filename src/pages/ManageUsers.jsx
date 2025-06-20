@@ -1,383 +1,573 @@
-import React, { useState, useRef, useEffect } from 'react';
+// ============================================================================
+// Modern Manage Users Page Component
+// ============================================================================
+import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  Search, MoreHorizontal, Edit, Trash2, Eye, Mail, CheckCircle,
-  XCircle, Download, Upload, UserPlus, Shield, User
-} from 'lucide-react';
+  faPlus, 
+  faSearch, 
+  faEdit, 
+  faTrash, 
+  faEye, 
+  faFilter,
+  faDownload,
+  faUserCircle,
+  faChevronDown,
+  faRefresh
+} from '@fortawesome/free-solid-svg-icons';
+import { userAPI } from '../api/userapi';
+import EditUserModal from '../components/modals/EditUserModal';
+import { CreateUserModal, UserDetailsModal } from '../components/modals/CreateUserModal';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [openActionDropdown, setOpenActionDropdown] = useState(null);
-  const [filters, setFilters] = useState({
-    role: 'All',
-    status: 'All',
-    department: 'All'
-  });
-  const dropdownRef = useRef(null);
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
+  
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
+  // Load users
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('Not authenticated');
-      setUsers([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    fetch('/api/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (!Array.isArray(data)) {
-          setUsers([]);
-          setError('API did not return an array');
-        } else {
-          setUsers(data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setUsers([]);
-        setLoading(false);
-      });
+    loadUsers();
   }, []);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenActionDropdown(null);
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const usersData = await userAPI.getUsers();
+      
+      // Debug: Log the actual response structure
+      console.log('Raw API Response:', usersData);
+      console.log('First user object:', usersData[0] || 'No users');
+      
+      // Handle different response structures and normalize data
+      let normalizedUsers = [];
+      if (Array.isArray(usersData)) {
+        normalizedUsers = usersData;
+      } else if (usersData.users?.data) {
+        normalizedUsers = usersData.users.data;
+      } else if (usersData.users) {
+        normalizedUsers = usersData.users;
+      } else if (usersData.data) {
+        normalizedUsers = usersData.data;
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
-  // Filter users
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filters.role === 'All' || user.role === filters.role;
-    const matchesStatus = filters.status === 'All' || user.status === filters.status;
-    const matchesDepartment = filters.department === 'All' || user.department === filters.department;
-    return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
-  });
+      // Normalize user data to ensure consistent field names
+      const processedUsers = normalizedUsers.map(user => ({
+        id: user.id,
+        fullname: user.fullname || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'N/A',
+        email: user.email || 'N/A',
+        role: user.userrole || user.role || user.rolename || 'User',
+        status: user.status || (user.suspended === '0' || user.suspended === 0 ? 'Active' : 'Inactive'),
+        avatar: user.profileimageurl || null,
+        department: user.department || 'N/A',
+        lastaccess: user.lastaccess || null,
+        timecreated: user.timecreated || null,
+        // Keep original data for modals
+        ...user
+      }));
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Active': return 'text-green-600 bg-green-100';
-      case 'Inactive': return 'text-red-600 bg-red-100';
-      case 'Pending': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getRoleIcon = (role) => {
-    switch(role) {
-      case 'Admin': return <Shield className="w-4 h-4 text-purple-600" />;
-      case 'Teacher': return <User className="w-4 h-4 text-blue-600" />;
-      case 'Student': return <User className="w-4 h-4 text-green-600" />;
-      default: return <User className="w-4 h-4 text-gray-600" />;
+      setUsers(processedUsers);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleUserSelection = (userId) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId) 
-        : [...prev, userId]
-    );
-  };
+  // Get unique roles for filter dropdown
+  const uniqueRoles = [...new Set(users.map(user => user.role))];
 
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedUsers(filteredUsers.map(user => user.id));
-    } else {
-      setSelectedUsers([]);
-    }
+  // Filter and sort users
+  const filteredAndSortedUsers = users
+    .filter(user => {
+      const matchesSearch = 
+        user.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.role.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesRole = filterRole === 'all' || user.role === filterRole;
+      const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    })
+    .sort((a, b) => {
+      let aValue = a[sortBy] || '';
+      let bValue = b[sortBy] || '';
+      
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedUsers.length / usersPerPage);
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredAndSortedUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+  // Event handlers
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
   };
 
   const handleViewUser = (user) => {
-    alert(`Viewing details for: ${user.name}`);
-    setOpenActionDropdown(null);
+    setSelectedUser(user);
+    setShowDetailsModal(true);
   };
 
-  const handleEditUser = (user) => {
-    alert(`Editing user: ${user.name}`);
-    setOpenActionDropdown(null);
-  };
-
-  const handleDeleteUser = (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(prev => prev.filter(user => user.id !== userId));
-      setOpenActionDropdown(null);
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        // TODO: Implement API call
+        // await userAPI.deleteUser(userId);
+        setUsers(prev => prev.filter(user => user.id !== userId));
+        console.log('User deleted:', userId);
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+        alert('Failed to delete user. Please try again.');
+      }
     }
   };
 
-  const handleStatusChange = (userId, newStatus) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, status: newStatus } : user
-    ));
-    setOpenActionDropdown(null);
-  };
-
-  const handleBulkDelete = () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`)) {
-      setUsers(prev => prev.filter(user => !selectedUsers.includes(user.id)));
-      setSelectedUsers([]);
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
     }
   };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'Never';
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'inactive':
+      case 'suspended':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getRoleColor = (role) => {
+    const colors = {
+      'admin': 'bg-purple-100 text-purple-800 border-purple-200',
+      'teacher': 'bg-blue-100 text-blue-800 border-blue-200',
+      'student': 'bg-green-100 text-green-800 border-green-200',
+      'manager': 'bg-orange-100 text-orange-800 border-orange-200',
+    };
+    return colors[role?.toLowerCase()] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-200 border-t-blue-600 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-r-blue-400 animate-pulse mx-auto"></div>
+          </div>
+          <p className="mt-4 text-slate-600 font-medium">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-full">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manage Users</h1>
-      </div>
-
-      {/* Top Actions */}
-      <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-3 items-center">
-          <button
-            onClick={() => alert('Create user functionality coming soon!')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <UserPlus size={16} />
-            Add New User
-          </button>
-          <button
-            onClick={() => alert('Import users functionality coming soon!')}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Upload size={16} />
-            Import Users
-          </button>
-          <button
-            onClick={() => alert('Export users functionality coming soon!')}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Download size={16} />
-            Export Users
-          </button>
-        </div>
-        {selectedUsers.length > 0 && (
-          <div className="flex gap-2 items-center">
-            <span className="text-sm text-gray-600">{selectedUsers.length} selected</span>
-            <button
-              onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded flex items-center gap-1 text-sm"
-            >
-              <Trash2 size={14} />
-              Delete
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Modern Header */}
+        <div className="mb-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-xl">
+                    <FontAwesomeIcon icon={faUserCircle} className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
+                    <p className="text-slate-600">Manage and organize your system users</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 lg:mt-0 flex flex-wrap gap-3">
+                <button
+                  onClick={loadUsers}
+                  className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  <FontAwesomeIcon icon={faRefresh} className="mr-2 h-4 w-4" />
+                  Refresh
+                </button>
+                <button className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                  <FontAwesomeIcon icon={faDownload} className="mr-2 h-4 w-4" />
+                  Export
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="mr-2 h-4 w-4" />
+                  Add User
+                </button>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* Search and Filters */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="relative flex-1 min-w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search users by name or email..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <select
-            className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            value={filters.role}
-            onChange={(e) => setFilters({...filters, role: e.target.value})}
-          >
-            <option value="All">All Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="Teacher">Teacher</option>
-            <option value="Student">Student</option>
-          </select>
-          <select
-            className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            value={filters.status}
-            onChange={(e) => setFilters({...filters, status: e.target.value})}
-          >
-            <option value="All">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="Pending">Pending</option>
-          </select>
-          <select
-            className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            value={filters.department}
-            onChange={(e) => setFilters({...filters, department: e.target.value})}
-          >
-            <option value="All">All Departments</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="English">English</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Administration">Administration</option>
-          </select>
         </div>
-      </div>
 
-      {/* Loading and Error */}
-      {loading && <div className="text-blue-600 mb-4">Loading users...</div>}
-      {error && <div className="text-red-600 mb-4">{error}</div>}
-
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto" ref={dropdownRef}>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left">
+        {/* Enhanced Filters and Search */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 mb-6">
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="lg:col-span-2">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FontAwesomeIcon icon={faSearch} className="h-4 w-4 text-slate-400" />
+                  </div>
                   <input
-                    type="checkbox"
-                    className="rounded border-gray-300"
-                    onChange={handleSelectAll}
-                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                    type="text"
+                    placeholder="Search users by name, email, or role..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
                   />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  User
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Role
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Department
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Last Login
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => toggleUserSelection(user.id)}
-                    />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                        <User className="w-5 h-5 text-gray-600" />
+                </div>
+              </div>
+
+              {/* Role Filter */}
+              <div className="relative">
+                <select
+                  value={filterRole}
+                  onChange={(e) => setFilterRole(e.target.value)}
+                  className="block w-full pl-3 pr-10 py-2.5 text-base border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm rounded-lg appearance-none bg-white"
+                >
+                  <option value="all">All Roles</option>
+                  {uniqueRoles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <FontAwesomeIcon icon={faChevronDown} className="h-4 w-4 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="relative">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="block w-full pl-3 pr-10 py-2.5 text-base border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm rounded-lg appearance-none bg-white"
+                >
+                  <option value="all">All Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Pending">Pending</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <FontAwesomeIcon icon={faChevronDown} className="h-4 w-4 text-slate-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Results Summary */}
+            <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
+              <div>
+                Showing {indexOfFirstUser + 1}-{Math.min(indexOfLastUser, filteredAndSortedUsers.length)} of {filteredAndSortedUsers.length} users
+              </div>
+              <div className="flex items-center space-x-2">
+                <FontAwesomeIcon icon={faFilter} className="h-4 w-4" />
+                <span>{filteredAndSortedUsers.length} filtered results</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modern Users Table */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th 
+                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => handleSort('fullname')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>User</span>
+                      {sortBy === 'fullname' && (
+                        <FontAwesomeIcon 
+                          icon={faChevronDown} 
+                          className={`h-3 w-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
+                        />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => handleSort('email')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Email</span>
+                      {sortBy === 'email' && (
+                        <FontAwesomeIcon 
+                          icon={faChevronDown} 
+                          className={`h-3 w-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
+                        />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => handleSort('role')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Role</span>
+                      {sortBy === 'role' && (
+                        <FontAwesomeIcon 
+                          icon={faChevronDown} 
+                          className={`h-3 w-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
+                        />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Status</span>
+                      {sortBy === 'status' && (
+                        <FontAwesomeIcon 
+                          icon={faChevronDown} 
+                          className={`h-3 w-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
+                        />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Last Access
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-100">
+                {currentUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <FontAwesomeIcon icon={faUserCircle} className="h-12 w-12 text-slate-300 mb-4" />
+                        <p className="text-slate-500 text-lg font-medium">
+                          {searchQuery || filterRole !== 'all' || filterStatus !== 'all' 
+                            ? 'No users found matching your criteria.' 
+                            : 'No users found.'}
+                        </p>
+                        {(searchQuery || filterRole !== 'all' || filterStatus !== 'all') && (
+                          <button
+                            onClick={() => {
+                              setSearchQuery('');
+                              setFilterRole('all');
+                              setFilterStatus('all');
+                            }}
+                            className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            Clear filters
+                          </button>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
-                          {user.email}
+                    </td>
+                  </tr>
+                ) : (
+                  currentUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {user.avatar ? (
+                              <img 
+                                className="h-10 w-10 rounded-full object-cover border-2 border-slate-200" 
+                                src={user.avatar} 
+                                alt={user.fullname} 
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                                <span className="text-sm font-semibold text-white">
+                                  {user.fullname.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-semibold text-slate-900">{user.fullname}</div>
+                            <div className="text-sm text-slate-500">{user.department}</div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center">
-                      {getRoleIcon(user.role)}
-                      <span className="ml-2 text-sm text-gray-900">{user.role}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-900">
-                    {user.department}
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-500">
-                    {user.lastLogin}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="relative">
-                      <button
-                        onClick={() => setOpenActionDropdown(openActionDropdown === user.id ? null : user.id)}
-                        className="text-gray-400 hover:text-gray-600 p-1"
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {openActionDropdown === user.id && (
-                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border">
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-slate-900">{user.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(user.role)}`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                        {formatDate(user.lastaccess)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center space-x-2">
                           <button
                             onClick={() => handleViewUser(user)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150"
+                            title="View Details"
                           >
-                            <Eye size={14} className="mr-2" />
-                            View Details
+                            <FontAwesomeIcon icon={faEye} className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleEditUser(user)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-150"
+                            title="Edit User"
                           >
-                            <Edit size={14} className="mr-2" />
-                            Edit User
+                            <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
                           </button>
-                          <hr className="my-1" />
-                          <button
-                            onClick={() => handleStatusChange(user.id, user.status === 'Active' ? 'Inactive' : 'Active')}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            {user.status === 'Active' ? (
-                              <>
-                                <XCircle size={14} className="mr-2" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle size={14} className="mr-2" />
-                                Activate
-                              </>
-                            )}
-                          </button>
-                          <hr className="my-1" />
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-150"
+                            title="Delete User"
                           >
-                            <Trash2 size={14} className="mr-2" />
-                            Delete User
+                            <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                           </button>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {/* Results Summary */}
-        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
-          <div className="text-sm text-gray-700">
-            Showing {filteredUsers.length} of {users.length} users
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
+
+          {/* Modern Pagination */}
+          {totalPages > 1 && (
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(currentPage - 2 + i, totalPages - 4 + i));
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                          currentPage === pageNum
+                            ? 'text-white bg-blue-600 border border-blue-600'
+                            : 'text-slate-700 bg-white border border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modals */}
+      {showCreateModal && (
+        <CreateUserModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onUserCreated={(newUser) => {
+            setUsers(prev => [newUser, ...prev]);
+            setShowCreateModal(false);
+          }}
+        />
+      )}
+
+      {showEditModal && selectedUser && (
+        <EditUserModal
+          isOpen={showEditModal}
+          user={selectedUser}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedUser(null);
+          }}
+          onUserUpdated={(updatedUser) => {
+            setUsers(prev => prev.map(user => 
+              user.id === updatedUser.id ? updatedUser : user
+            ));
+            setShowEditModal(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
+
+      {showDetailsModal && selectedUser && (
+        <UserDetailsModal
+          isOpen={showDetailsModal}
+          user={selectedUser}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
     </div>
   );
 };

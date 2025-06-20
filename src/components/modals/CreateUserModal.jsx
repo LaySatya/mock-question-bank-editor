@@ -406,4 +406,4 @@ const UserDetailsModal = ({ user, onClose, onEdit }) => {
   );
 };
 
-export { EditUserModal, UserDetailsModal };
+export { EditUserModal as CreateUserModal, UserDetailsModal };
