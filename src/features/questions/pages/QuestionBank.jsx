@@ -52,6 +52,9 @@ const QuestionBank = () => {
   const [questionsPerPage, setQuestionsPerPage] = useState(10);
 
   
+
+
+  
   // Generate tags from current questions for filter dropdown
   // const allTags = React.useMemo(() => {
   //   const tagSet = new Set();
@@ -98,212 +101,166 @@ const allTags = React.useMemo(() => {
   return ['All', ...Array.from(tagSet).sort()];
 }, [questions]);
   // Enhanced fetch function with better filtering handling
-  const fetchQuestionsFromAPI = async (currentFilters = {}, page = 1, perPage = questionsPerPage) => {
-    console.log('🔧 STARTING API FETCH:', { currentFilters, page, perPage });
+const fetchQuestionsFromAPI = async (currentFilters = {}, page = 1, perPage = questionsPerPage) => {
+  console.log('🔧 STARTING API FETCH:', { currentFilters, page, perPage });
+  
+  try {
+    setLoading(true);
+    setError(null);
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No authentication token found');
+      setError('Authentication required. Please log in.');
+      window.location.href = '/login';
+      return;
+    }
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('perpage', perPage.toString());
     
-    try {
-      setLoading(true);
-      setError(null);
+    if (currentFilters.category && currentFilters.category !== 'All') {
+      params.append('category', currentFilters.category);
+    }
+    if (currentFilters.status && currentFilters.status !== 'All') {
+      params.append('status', currentFilters.status);
+    }
+    if (currentFilters.type && currentFilters.type !== 'All') {
+      params.append('type', currentFilters.type);
+    }
+    if (currentFilters.searchQuery && currentFilters.searchQuery.trim() !== '') {
+      params.append('searchQuery', currentFilters.searchQuery.trim());
+    }
+    if (currentFilters.tagFilter && currentFilters.tagFilter !== 'All') {
+      params.append('tagFilter', currentFilters.tagFilter);
+    }
 
-      // Check authentication first
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('❌ No authentication token found');
-        const errorMsg = 'Authentication required. Please log in.';
-        setError(errorMsg);
-        alert(errorMsg);
-        window.location.href = '/login';
-        return;
+    console.log(' API URL params:', params.toString());
+
+    const apiUrl = `http://127.0.0.1:8000/api/questions/filters?${params.toString()}`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
+    });
 
-      // Validate and normalize filter values for the API
-      const validatedFilters = { ...currentFilters };
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(' API Response Structure:', {
+      hasQuestions: !!data.questions,
+      questionsLength: data.questions?.length,
+      currentPage: data.current_page,
+      total: data.total,
+      lastPage: data.last_page
+    });
+
+    //  CRITICAL FIX: Handle your exact API response structure
+    if (data && Array.isArray(data.questions)) {
+      // Your API returns: { current_page, per_page, total, last_page, questions: [...] }
+      const questionsArray = data.questions;
       
-      // Category validation - ensure it's numeric ID
-      if (validatedFilters.category && validatedFilters.category !== 'All') {
-        const categoryId = parseInt(validatedFilters.category);
-        if (isNaN(categoryId)) {
-          console.warn('⚠️ Invalid category format - expected numeric ID, got:', validatedFilters.category);
-          validatedFilters.category = 'All';
-        } else {
-          validatedFilters.category = categoryId;
-        }
-      }
+      // Update pagination state from API response
+      setTotalQuestions(data.total || 0);
+      setCurrentPage(data.current_page || page);
       
-      // Status validation - ensure lowercase
-      if (validatedFilters.status && validatedFilters.status !== 'All') {
-        const validStatuses = ['draft', 'ready', 'review', 'hidden', 'archived'];
-        const normalizedStatus = validatedFilters.status.toLowerCase();
-        if (!validStatuses.includes(normalizedStatus)) {
-          console.warn('⚠️ Invalid status value:', validatedFilters.status);
-          validatedFilters.status = 'All';
-        } else {
-          validatedFilters.status = normalizedStatus;
-        }
-      }
-      
-      // Type validation
-      if (validatedFilters.type && validatedFilters.type !== 'All') {
-        const isValidType = availableQuestionTypes.some(
-          type => type.value === validatedFilters.type
-        );
-        
-        if (!isValidType) {
-          console.warn('⚠️ Invalid question type:', validatedFilters.type);
-          validatedFilters.type = 'All';
-        }
-      }
-      
-      console.log('✅ Using validated filters:', validatedFilters);
-
-      // Fetch questions and users in parallel using the validated filters
-      const [questionsData, usersData] = await Promise.all([
-        questionAPI.getQuestions(validatedFilters, page, perPage).catch((error) => {
-          throw new Error('Failed to fetch questions: ' + error.message);
-        }),
-        questionAPI.getAllUsers().catch((error) => {
-          // Not critical, just log and return empty array
-          console.warn('Failed to fetch users:', error);
-          return [];
-        })
-      ]);
-        
-      console.log('📊 RAW API RESPONSE:', {
-        questionsData,
-        questionsDataKeys: questionsData ? Object.keys(questionsData) : 'null',
-        dataArray: questionsData && questionsData.data ? questionsData.data.length : 'no data array',
-        total: questionsData ? questionsData.total : 'no total'
-      });
-
-      // Pre-populate user cache
-      if (Array.isArray(usersData) && usersData.length > 0) {
-        usersData.forEach(user => {
-          const userId = user.id;
-          let userName = 'Unknown';
-          
-          if (user.username) {
-            userName = user.username;
-          } else if (user.fullname) {
-            userName = user.fullname;
-          } else if (user.firstname && user.lastname) {
-            userName = `${user.firstname} ${user.lastname}`;
-          } else if (user.name) {
-            userName = user.name;
-          } else if (user.firstname) {
-            userName = user.firstname;
-          } else if (user.email) {
-            userName = user.email.split('@')[0];
-          }
-          
-          // Store in global user cache (you'd need to implement this)
-          console.log(`👤 User cached: ${userId} -> ${userName}`);
-        });
-        
-        console.log(`✅ Pre-populated user cache with ${usersData.length} users`);
-      }
-
-      // Handle paginated response with better error handling
-      let questionsArray = [];
-      let paginationInfo = {
-        total: 0,
-        current_page: page,
-        per_page: perPage,
-        last_page: 1
-      };
-      
-      if (questionsData) {
-        if (Array.isArray(questionsData)) {
-          // Direct array response (non-paginated)
-          questionsArray = questionsData;
-          paginationInfo.total = questionsArray.length;
-          paginationInfo.last_page = Math.ceil(questionsArray.length / perPage);
-        } else if (questionsData.data && Array.isArray(questionsData.data)) {
-          // Laravel paginated response format
-          questionsArray = questionsData.data;
-          paginationInfo.total = questionsData.total || questionsArray.length;
-          paginationInfo.current_page = questionsData.current_page || page;
-          paginationInfo.per_page = questionsData.per_page || perPage;
-          paginationInfo.last_page = questionsData.last_page || Math.ceil(paginationInfo.total / perPage);
-        } else if (questionsData.questions && Array.isArray(questionsData.questions)) {
-          // Alternative response format
-          console.log('📝 Response format: Questions wrapper');
-          questionsArray = questionsData.questions;
-          paginationInfo.total = questionsData.total || questionsArray.length;
-        } else if (questionsData.success && questionsData.data && Array.isArray(questionsData.data)) {
-          // Success wrapper format
-          console.log('✅ Response format: Success wrapper');
-          questionsArray = questionsData.data;
-          paginationInfo.total = questionsData.total || questionsArray.length;
-        } else {
-          console.warn('⚠️ UNEXPECTED API RESPONSE FORMAT:', questionsData);
-          console.warn('Available keys:', questionsData ? Object.keys(questionsData) : 'none');
-          questionsArray = [];
-        }
-      }
-
-      console.log(`📋 PROCESSING ${questionsArray.length} questions from API:`, {
-        total: paginationInfo.total,
-        currentPage: paginationInfo.current_page,
-        perPage: paginationInfo.per_page,
-        lastPage: paginationInfo.last_page
-      });
-
-      // Update pagination info
-      setTotalQuestions(paginationInfo.total);
+      console.log(` Processing ${questionsArray.length} questions from page ${data.current_page} of ${data.last_page}`);
 
       if (questionsArray.length > 0) {
-        // Normalize questions for frontend use
-        const normalizedQuestions = await Promise.all(
+        // Fetch tags for each question and transform
+        const transformedQuestions = await Promise.all(
           questionsArray.map(async (apiQuestion) => {
-            const normalizedQuestion = await normalizeQuestionFromAPI(apiQuestion);
-            return normalizedQuestion;
-          })
-        );
-
-        // Fetch tags for each question
-        const questionsWithTags = await Promise.all(
-          normalizedQuestions.map(async (question) => {
+            
+            // Fetch tags separately since they're not included in main response
+            let questionTags = [];
             try {
-              const realTags = await questionAPI.getQuestionTags(question.id);
-              const finalTags = realTags.length > 0 ? realTags : generateDemoTags(question);
+              const tagResponse = await fetch(
+                `http://127.0.0.1:8000/api/questions/question-tags?questionid=${apiQuestion.id}`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  }
+                }
+              );
               
-              return {
-                ...question,
-                tags: finalTags
-              };
-            } catch (error) {
-              return {
-                ...question,
-                tags: generateDemoTags(question)
-              };
+              if (tagResponse.ok) {
+                const tagData = await tagResponse.json();
+                questionTags = Array.isArray(tagData.tags) ? tagData.tags : [];
+              }
+            } catch (tagError) {
+              console.warn(`⚠️ Failed to fetch tags for question ${apiQuestion.id}:`, tagError);
+              questionTags = [];
             }
+
+            // Transform to frontend format
+            return {
+              id: apiQuestion.id,
+              title: apiQuestion.name,
+              questionText: apiQuestion.questiontext,
+              qtype: apiQuestion.qtype,
+              questionType: apiQuestion.qtype,
+              status: apiQuestion.status || 'ready',
+              version: `v${apiQuestion.version || 1}`,
+              comments: 0,
+              usage: 0,
+              lastUsed: '-',
+              createdBy: {
+                name: apiQuestion.createdbyuser ? 
+                  `${apiQuestion.createdbyuser.firstname} ${apiQuestion.createdbyuser.lastname}` : 
+                  'Unknown',
+                role: '',
+                date: apiQuestion.timecreated ? 
+                  new Date(apiQuestion.timecreated * 1000).toLocaleDateString() : 
+                  ''
+              },
+              modifiedBy: {
+                name: apiQuestion.modifiedbyuser ? 
+                  `${apiQuestion.modifiedbyuser.firstname} ${apiQuestion.modifiedbyuser.lastname}` : 
+                  'Unknown',
+                role: '',
+                date: apiQuestion.timemodified ? 
+                  new Date(apiQuestion.timemodified * 1000).toLocaleDateString() : 
+                  ''
+              },
+              choices: apiQuestion.answers || [],
+              tags: questionTags,
+              idNumber: apiQuestion.id
+            };
           })
         );
 
-        console.log('🎯 FINAL RESULT: Questions ready for display:', questionsWithTags.length);
-        setQuestions(questionsWithTags);
+        console.log(' Setting transformed questions:', transformedQuestions.length);
+        setQuestions(transformedQuestions);
       } else {
-        console.log('📭 No questions found with current filters');
         setQuestions([]);
       }
-
-    } catch (error) {
-      console.error('❌ Error fetching questions:', error);
-      setError(error.message);
+    } else {
+      console.warn(' Unexpected API response format:', data);
       setQuestions([]);
       setTotalQuestions(0);
-      
-      if (error.message.includes('Authentication') || error.message.includes('401')) {
-        console.log('🔐 Authentication error handled, user will be redirected');
-      } else if (error.message.includes('Network')) {
-        alert('Network error. Please check your connection and try again.');
-      } else {
-        alert(`Failed to load questions: ${error.message}`);
-      }
-    } finally {
-      setLoading(false);
     }
-  };
+
+  } catch (error) {
+    console.error(' Error fetching questions:', error);
+    setError(error.message);
+    setQuestions([]);
+    setTotalQuestions(0);
+    alert(`Failed to load questions: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Load question types and categories from API
   const loadStaticData = async () => {
@@ -348,55 +305,63 @@ const allTags = React.useMemo(() => {
   }, [filters.category, filters.status, filters.type, searchQuery, tagFilter]);
 
   // Handle pagination changes
-  useEffect(() => {
-    if (currentPage > 1) {
-      console.log('📄 PAGE CHANGED to:', currentPage);
-      const filterParams = {
-        category: filters.category,
-        status: filters.status,
-        type: filters.type,
-        searchQuery,
-        tagFilter
-      };
-      
-      fetchQuestionsFromAPI(filterParams, currentPage, questionsPerPage);
-    }
-  }, [currentPage]);
-
-  // Handle per-page changes
-  useEffect(() => {
-    if (questionsPerPage !== 10) { // Only trigger if changed from default
-      console.log('📊 PER PAGE CHANGED to:', questionsPerPage);
-      const filterParams = {
-        category: filters.category,
-        status: filters.status,
-        type: filters.type,
-        searchQuery,
-        tagFilter
-      };
-      
-      setCurrentPage(1); // Reset to first page
-      fetchQuestionsFromAPI(filterParams, 1, questionsPerPage);
-    }
-  }, [questionsPerPage]);
-
-  // Initial load on mount
-  useEffect(() => {
-    console.log('🚀 QuestionBank component mounted - Initial load...');
+useEffect(() => {
+  if (currentPage > 1) {
+    console.log('📄 PAGE CHANGED to:', currentPage);
+    const filterParams = {
+      category: filters.category,
+      status: filters.status,
+      type: filters.type,
+      searchQuery,
+      tagFilter
+    };
     
-    // Load static data and initial questions
-    Promise.all([
-      loadStaticData(),
-      fetchQuestionsFromAPI({
-        category: 'All',
-        status: 'All',
-        type: 'All',
-        searchQuery: '',
-        tagFilter: 'All'
-      }, 1, questionsPerPage)
-    ]);
-  }, []);
+    fetchQuestionsFromAPI(filterParams, currentPage, questionsPerPage);
+  }
+}, [currentPage]); // Only depend on currentPage
 
+// Handle per-page changes
+useEffect(() => {
+  // Only trigger API call, don't reset currentPage here since it's already done in the onChange
+  if (questionsPerPage !== 10) {
+    console.log('📊 PER PAGE CHANGED to:', questionsPerPage);
+    const filterParams = {
+      category: filters.category,
+      status: filters.status,
+      type: filters.type,
+      searchQuery,
+      tagFilter
+    };
+    
+        //  Refetch questions to ensure UI is in sync with backend
+    fetchQuestionsFromAPI({
+      category: filters.category,
+      status: filters.status,
+      type: filters.type,
+      searchQuery,
+      tagFilter
+    }, currentPage, questionsPerPage); // Always use page 1 for per-page changes
+  }
+}, [questionsPerPage]);
+
+
+ useEffect(() => {
+  console.log('🔄 FILTERS CHANGED - Triggering API call');
+  
+  const filterParams = {
+    category: filters.category,
+    status: filters.status,
+    type: filters.type,
+    searchQuery,
+    tagFilter
+  };
+
+  // Always reset to page 1 when filters change
+  setCurrentPage(1);
+  fetchQuestionsFromAPI(filterParams, 1, questionsPerPage);
+}, [filters.category, filters.status, filters.type, searchQuery, tagFilter]);
+
+console.log(' Pagination fixes applied for existing API structure');
   // Dropdown hooks
   const {
     openActionDropdown,
@@ -442,9 +407,9 @@ const allTags = React.useMemo(() => {
       setQuestions(prev => prev.filter(q => q.id !== questionId));
       setSelectedQuestions(prev => prev.filter(id => id !== questionId));
       
-      console.log('🗑️ Question deleted:', questionId);
+      console.log(' Question deleted:', questionId);
     } catch (error) {
-      console.error('❌ Delete failed:', error);
+      console.error(' Delete failed:', error);
       alert('Failed to delete question');
     }
   };
@@ -484,7 +449,7 @@ const allTags = React.useMemo(() => {
 
   // Handle status change with API integration
   const handleStatusChange = async (questionId, newStatus) => {
-    console.log('🔄 Starting status change:', { questionId, newStatus });
+    console.log(' Starting status change:', { questionId, newStatus });
     
     try {
       if (!questionId || !newStatus) {
@@ -493,12 +458,12 @@ const allTags = React.useMemo(() => {
       
       const currentQuestion = questions.find(q => q.id === questionId);
       if (!currentQuestion) {
-        console.error('❌ Question not found in local state:', questionId);
+        console.error('Question not found in local state:', questionId);
         throw new Error(`Question with ID ${questionId} not found`);
       }
 
       if (currentQuestion.status === newStatus) {
-        console.log('ℹ️ Status is already', newStatus, '- no change needed');
+        console.log(' Status is already', newStatus, '- no change needed');
         return;
       }
 
@@ -519,10 +484,10 @@ const allTags = React.useMemo(() => {
         throw new Error(result.error);
       }
       
-      console.log('✅ Status change successful!');
+      console.log(' Status change successful!');
 
     } catch (error) {
-      console.error('❌ Status change failed:', error);
+      console.error('Status change failed:', error);
       
       // Revert UI change on error
       setQuestions(questions);
@@ -539,7 +504,7 @@ const allTags = React.useMemo(() => {
 
   // Handle bulk status change
   const handleBulkStatusChange = async (questionIds, newStatus) => {
-    console.log('🔄 Starting bulk status change:', { questionIds, newStatus });
+    console.log(' Starting bulk status change:', { questionIds, newStatus });
   
     try {
       // Optimistically update UI
@@ -547,29 +512,29 @@ const allTags = React.useMemo(() => {
         questionIds.includes(q.id) ? { ...q, status: newStatus } : q
       );
       setQuestions(updatedQuestions);
-  
+
       // Call API
       const result = await questionAPI.bulkUpdateQuestionStatus(questionIds, newStatus);
-  
+
       // Clear selection
       setSelectedQuestions([]);
-  
+
       // ✅ Refetch questions to ensure UI is in sync with backend
-      fetchQuestionsFromAPI({
-        category: filters.category,
-        status: filters.status,
-        type: filters.type,
-        searchQuery,
-        tagFilter
-      }, currentPage, questionsPerPage);
-  
+      // fetchQuestionsFromAPI({
+      //   category: filters.category,
+      //   status: filters.status,
+      //   type: filters.type,
+      //   searchQuery,
+      //   tagFilter
+      // }, currentPage, questionsPerPage);
+
       console.log('✅ Bulk status change successful!');
     } catch (error) {
       console.error('❌ Bulk status change failed:', error);
-  
+
       // Revert UI change on error
       setQuestions(questions);
-  
+
       alert(`Failed to update status: ${error.message}`);
     }
   };
@@ -587,7 +552,7 @@ const allTags = React.useMemo(() => {
   };
 
   // Calculate total pages based on API response
-  const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+ const totalPages = Math.ceil(totalQuestions / questionsPerPage);
 
   const setFiltersWithLogging = (newFilters) => {
     console.log('🔄 Filters updated:', newFilters);
@@ -631,29 +596,14 @@ const allTags = React.useMemo(() => {
         showQuestionsDropdown={showQuestionsDropdown}
         setShowQuestionsDropdown={setShowQuestionsDropdown}
         questionsDropdownRef={questionsDropdownRef}
-        handleFileUpload={async (file, parsedQuestions) => {
-          console.log('📥 QuestionBank received import request:', {
-            file: file.name,
-            parsedQuestions: parsedQuestions.length
-          });
-          
-          const result = await handleFileUpload(file, parsedQuestions);
-          
-          if (result) {
-            console.log('✅ Import completed:', result);
-            setCurrentPage(1);
-            return result;
-          }
-          
-          return null;
-        }}
+       handleFileUpload={handleFileUpload}
         setShowCreateModal={setShowCreateModal}
         showQuestionText={showQuestionText}
         setShowQuestionText={setShowQuestionText}
       />
 
       {selectedQuestions.length > 0 && (
-        <BulkActionsRow
+             <BulkActionsRow
           selectedQuestions={selectedQuestions}
           setSelectedQuestions={setSelectedQuestions}
           setShowBulkEditModal={setShowBulkEditModal}
@@ -664,6 +614,21 @@ const allTags = React.useMemo(() => {
             }
           }}
           onBulkStatusChange={handleBulkStatusChange}
+          onReloadQuestions={() =>
+            fetchQuestionsFromAPI(
+              {
+                category: filters.category,
+                status: filters.status,
+                type: filters.type,
+                searchQuery,
+                tagFilter
+              },
+              1, // always reload first page
+              questionsPerPage
+            )
+          }
+          questions={questions}           
+          setQuestions={setQuestions}     
         />
       )}
 
@@ -739,97 +704,106 @@ const allTags = React.useMemo(() => {
             setQuestions={setQuestions}
           />
 
-          {/* Enhanced Pagination Controls */}
-          <div className="mt-4 flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{((currentPage - 1) * questionsPerPage) + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(currentPage * questionsPerPage, totalQuestions)}</span> of{' '}
-                  <span className="font-medium">{totalQuestions}</span> results
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {/* Items per page selector */}
-              <div className="flex items-center space-x-2">
-                <label className="text-sm text-gray-700">Per page:</label>
-                <select
-                  value={questionsPerPage}
-                  onChange={(e) => handlePerPageChange(Number(e.target.value))}
-                  className="border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={loading}
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-              </div>
+          
+        
+{/* Enhanced Pagination Controls - */}
+{!loading && questions.length > 0 && (
+  <div className="mt-4 flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-700">
+          Showing <span className="font-medium">{((currentPage - 1) * questionsPerPage) + 1}</span> to{' '}
+          <span className="font-medium">{Math.min(currentPage * questionsPerPage, totalQuestions)}</span> of{' '}
+          <span className="font-medium">{totalQuestions}</span> results
+        </p>
+      </div>
+    </div>
+    <div className="flex items-center space-x-2">
+      {/* Items per page selector */}
+      <div className="flex items-center space-x-2">
+        <label className="text-sm text-gray-700">Per page:</label>
+        <select
+          value={questionsPerPage}
+          onChange={(e) => {
+            const newPerPage = Number(e.target.value);
+            setQuestionsPerPage(newPerPage);
+            setCurrentPage(1); // Reset to first page
+          }}
+          className="border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+          disabled={loading}
+        >
+          <option value={10}>10</option>
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </div>
 
-              {/* Pagination buttons */}
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button
-                  onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1 || loading}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  First
-                </button>
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1 || loading}
-                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                
-                {/* Page numbers */}
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      disabled={loading}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium disabled:cursor-not-allowed ${
-                        currentPage === pageNum
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+      {/* Pagination buttons */}
+      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+        <button
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1 || loading}
+          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          First
+        </button>
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1 || loading}
+          className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        
+        {/* Page numbers */}
+        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+          let pageNum;
+          if (totalPages <= 5) {
+            pageNum = i + 1;
+          } else if (currentPage <= 3) {
+            pageNum = i + 1;
+          } else if (currentPage >= totalPages - 2) {
+            pageNum = totalPages - 4 + i;
+          } else {
+            pageNum = currentPage - 2 + i;
+          }
+          
+          return (
+            <button
+              key={pageNum}
+              onClick={() => setCurrentPage(pageNum)}
+              disabled={loading}
+              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium disabled:cursor-not-allowed ${
+                currentPage === pageNum
+                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {pageNum}
+            </button>
+          );
+        })}
 
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages || loading}
-                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-                <button
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={currentPage === totalPages || loading}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Last
-                </button>
-              </nav>
-            </div>
-          </div>
+        <button
+          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          disabled={currentPage === totalPages || loading}
+          className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+        <button
+          onClick={() => setCurrentPage(totalPages)}
+          disabled={currentPage === totalPages || loading}
+          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Last
+        </button>
+      </nav>
+    </div>
+  </div>
+)}
+
         </>
       )}
 
@@ -864,7 +838,7 @@ const allTags = React.useMemo(() => {
       />
 
       {/* Enhanced Debug info with filtering diagnosis */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* {process.env.NODE_ENV === 'development' && (
         <div className="mt-8 p-4 bg-gray-100 rounded text-sm">
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold">🐛 Debug Info - API INTEGRATION COMPLETE</h4>
@@ -962,7 +936,7 @@ const allTags = React.useMemo(() => {
             </p>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

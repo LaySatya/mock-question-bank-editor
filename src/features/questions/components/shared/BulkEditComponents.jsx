@@ -18,6 +18,27 @@ export const TagManager = ({
 }) => {
   const [customTag, setCustomTag] = useState('');
 
+  // 🔧 FIX: Normalize tag data - handle both string arrays and object arrays
+  const normalizeTagData = (tags) => {
+    if (!Array.isArray(tags)) return [];
+    
+    return tags.map(tag => {
+      // If it's already a string, return it
+      if (typeof tag === 'string') return tag;
+      
+      // If it's an object, extract the tag name
+      if (typeof tag === 'object' && tag !== null) {
+        return tag.rawname || tag.name || tag.tag || String(tag);
+      }
+      
+      // Fallback to string conversion
+      return String(tag);
+    }).filter(Boolean); // Remove any empty/null values
+  };
+
+  // 🔧 FIX: Normalize available tags
+  const normalizedAvailableTags = normalizeTagData(availableTags);
+
   const handleAddCustomTag = () => {
     if (customTag.trim()) {
       const success = onAddCustomTag(customTag.trim());
@@ -97,7 +118,7 @@ export const TagManager = ({
       {/* Add Tags Section */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-3">
-          Add Tags - {availableTags.length} available
+          Add Tags - {normalizedAvailableTags.length} available
         </label>
         {loading ? (
           <div className="text-center py-8">
@@ -106,15 +127,15 @@ export const TagManager = ({
           </div>
         ) : (
           <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-            {availableTags.length === 0 ? (
+            {normalizedAvailableTags.length === 0 ? (
               <div className="text-center w-full py-4 text-gray-500">
                 <Tag size={20} className="mx-auto mb-2 text-gray-300" />
                 <p className="text-sm">No tags available</p>
               </div>
             ) : (
-              availableTags.map(tag => (
+              normalizedAvailableTags.map((tag, index) => (
                 <button
-                  key={tag}
+                  key={`add-tag-${tag}-${index}`} // 🔧 FIX: Unique key with fallback
                   onClick={() => onTagOperation('add', tag)}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     selectedAddTags.includes(tag)
@@ -166,9 +187,9 @@ export const TagManager = ({
                   Found {existingTags.length} unique tags in selected questions
                 </div>
                 <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                  {existingTags.map(({ tag, count, percentage }) => (
+                  {existingTags.map(({ tag, count, percentage }, index) => (
                     <button
-                      key={tag}
+                      key={`remove-smart-tag-${tag}-${index}`} // 🔧 FIX: Unique key
                       onClick={() => onTagOperation('remove', tag)}
                       className={`px-3 py-1 rounded-full text-sm font-medium transition-all relative ${
                         selectedRemoveTags.includes(tag)
@@ -198,7 +219,7 @@ export const TagManager = ({
               </div>
             ) : (
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {availableTags.length === 0 ? (
+                {normalizedAvailableTags.length === 0 ? (
                   <div className="text-center w-full py-4 text-gray-500">
                     <Tag size={20} className="mx-auto mb-2 text-gray-300" />
                     <p className="text-sm">No tags available for removal</p>
@@ -207,9 +228,9 @@ export const TagManager = ({
                     )}
                   </div>
                 ) : (
-                  availableTags.map(tag => (
+                  normalizedAvailableTags.map((tag, index) => (
                     <button
-                      key={tag}
+                      key={`remove-tag-${tag}-${index}`} // 🔧 FIX: Unique key
                       onClick={() => onTagOperation('remove', tag)}
                       className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                         selectedRemoveTags.includes(tag)
@@ -296,8 +317,8 @@ export const CategorySelector = ({
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
       >
         {showNoChange && <option value="">{placeholder}</option>}
-        {categories.map(category => (
-          <option key={category.value} value={category.value}>
+        {categories.map((category, index) => (
+          <option key={`category-${category.value}-${index}`} value={category.value}>
             {category.label}
           </option>
         ))}
@@ -366,6 +387,18 @@ export const ChangesPreview = ({
   title = "Preview Changes",
   maxHeight = "16rem"
 }) => {
+  // 🔧 FIX: Normalize tag data for preview
+  const normalizeTagsForDisplay = (tags) => {
+    if (!Array.isArray(tags)) return [];
+    return tags.map(tag => {
+      if (typeof tag === 'string') return tag;
+      if (typeof tag === 'object' && tag !== null) {
+        return tag.rawname || tag.name || tag.tag || String(tag);
+      }
+      return String(tag);
+    }).filter(Boolean);
+  };
+
   return (
     <div className="bg-gray-50 rounded-lg p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
@@ -377,10 +410,12 @@ export const ChangesPreview = ({
             <p className="text-sm">No questions to preview</p>
           </div>
         ) : (
-          questions.map(q => {
+          questions.map((q, questionIndex) => {
             const changes = individualChanges[q.id] || {};
+            const questionTags = normalizeTagsForDisplay(changes.tags || q.tags || []);
+            
             return (
-              <div key={q.id} className="bg-white rounded-md p-4 border border-gray-200">
+              <div key={`preview-question-${q.id}-${questionIndex}`} className="bg-white rounded-md p-4 border border-gray-200">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900 mb-2">
@@ -395,21 +430,24 @@ export const ChangesPreview = ({
                         <span className="font-medium">Mark:</span> {changes.defaultMark || q.defaultMark || 1}
                       </div>
                       <div>
-                        <span className="font-medium">Tags:</span> {(changes.tags || q.tags || []).length}
+                        <span className="font-medium">Tags:</span> {questionTags.length}
                       </div>
                     </div>
                     
                     {/* Show tags if available */}
-                    {(changes.tags || q.tags) && (changes.tags || q.tags).length > 0 && (
+                    {questionTags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {(changes.tags || q.tags).slice(0, 5).map(tag => (
-                          <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        {questionTags.slice(0, 5).map((tag, tagIndex) => (
+                          <span 
+                            key={`preview-tag-${tag}-${tagIndex}`} 
+                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                          >
                             {tag}
                           </span>
                         ))}
-                        {(changes.tags || q.tags).length > 5 && (
+                        {questionTags.length > 5 && (
                           <span className="text-xs text-gray-500">
-                            +{(changes.tags || q.tags).length - 5} more
+                            +{questionTags.length - 5} more
                           </span>
                         )}
                       </div>

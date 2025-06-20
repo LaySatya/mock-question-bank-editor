@@ -1,5 +1,5 @@
 // ============================================================================
-//  src/api/questionAPI.js - Enhanced API Service with Fixed User Handling
+//  src/api/questionAPI.js - Enhanced API Service with User Caching & Normalization
 // ============================================================================
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -55,17 +55,13 @@ const mapQuestionTypeFromAPI = (apiType) => {
   return typeMapping[normalizedType] || typeMapping.default;
 };
 
-// Enhanced user cache to store user information
+// User cache for performance
 const userCache = new Map();
 
-// Helper: Get user information by ID with caching
+// Helper: Get user info by ID with caching
 const getUserById = async (userId) => {
   if (!userId) return null;
-  
-  // Check cache first
-  if (userCache.has(userId)) {
-    return userCache.get(userId);
-  }
+  if (userCache.has(userId)) return userCache.get(userId);
 
   try {
     const response = await fetch(`${API_BASE_URL}/users`, {
@@ -73,36 +69,24 @@ const getUserById = async (userId) => {
       headers: getAuthHeaders()
     });
     const data = await handleAPIResponse(response);
-    
-    // Handle different response formats
+
     let users = [];
-    if (Array.isArray(data)) {
-      users = data;
-    } else if (data.users && Array.isArray(data.users)) {
-      users = data.users;
-    } else if (data.data && Array.isArray(data.data)) {
-      users = data.data;
-    }
-    
-    // Cache all users for future use
+    if (Array.isArray(data)) users = data;
+    else if (data.users && Array.isArray(data.users)) users = data.users;
+    else if (data.data && Array.isArray(data.data)) users = data.data;
+
     users.forEach(user => {
       const userInfo = {
         id: user.id,
         firstname: user.firstname || user.first_name || '',
         lastname: user.lastname || user.last_name || '',
-        fullname: '',
+        fullname: `${user.firstname || user.first_name || ''} ${user.lastname || user.last_name || ''}`.trim() ||
+                  user.fullname || user.displayname || `User ${user.id}`,
         email: user.email || ''
       };
-      
-      // Create full name
-      userInfo.fullname = `${userInfo.firstname} ${userInfo.lastname}`.trim() || 
-                          user.fullname || 
-                          user.displayname || 
-                          `User ${user.id}`;
-      
       userCache.set(user.id, userInfo);
     });
-    
+
     return userCache.get(userId) || null;
   } catch (error) {
     console.error('❌ Failed to fetch user info:', error);
@@ -110,15 +94,12 @@ const getUserById = async (userId) => {
   }
 };
 
-// Helper: Get user name by ID (simplified version)
 const getUserNameById = async (userId) => {
   if (!userId) return 'Unknown';
-  
   const user = await getUserById(userId);
   return user ? user.fullname : `User ${userId}`;
 };
 
-// Main API object
 export const questionAPI = {
   // Get all tags
   async getTags() {
@@ -282,12 +263,8 @@ export const questionAPI = {
       
       // Enhanced processing to include user information
       if (data && data.questions && Array.isArray(data.questions)) {
-        // Pre-load all users to cache for better performance
-        await getUserById(1); // This triggers loading all users into cache
-        
-        // Process each question to add user information
+        await getUserById(1); // Preload users
         for (let question of data.questions) {
-          // Fetch creator info if we have creator ID
           if (question.createdby && !question.creator_name) {
             const creator = await getUserById(question.createdby);
             if (creator) {
@@ -296,8 +273,6 @@ export const questionAPI = {
               question.creator_lastname = creator.lastname;
             }
           }
-          
-          // Fetch modifier info if we have modifier ID
           if (question.modifiedby && !question.modifier_name) {
             const modifier = await getUserById(question.modifiedby);
             if (modifier) {
@@ -308,7 +283,6 @@ export const questionAPI = {
           }
         }
       }
-      
       return data;
     } catch (error) {
       console.error('❌ Failed to fetch questions:', error);
@@ -332,38 +306,38 @@ export const questionAPI = {
       console.error(' Failed to update question status:', error);
       throw error;
     }
-},
-      ///use for bulk operations
+  },
+
+  // Bulk update question status
   async bulkUpdateQuestionStatus(questionIds, newStatus) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/questions/status`, {
-      method: 'POST',
+    try {
+      const response = await fetch(`${API_BASE_URL}/questions/status`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          questionids: questionIds,
+          newstatus: newStatus
+        })
+      });
+      return await handleAPIResponse(response);
+    } catch (error) {
+      console.error(' Failed to bulk update question status:', error);
+      throw error;
+    }
+  },
+
+  // Bulk delete questions
+  async bulkDeleteQuestions(questionIds) {
+    const response = await fetch(`${API_BASE_URL}/questions/bulk-delete`, {
+      method: 'DELETE',
       headers: getAuthHeaders(),
-      body: JSON.stringify({
-        questionids: questionIds,
-        newstatus: newStatus
-      })
+      body: JSON.stringify({ questionids: questionIds })
     });
     return await handleAPIResponse(response);
-  } catch (error) {
-    console.error(' Failed to bulk update question status:', error);
-    throw error;
   }
-
-  },
-  async bulkDeleteQuestions(questionIds) {
-  const response = await fetch(`${API_BASE_URL}/questions/bulk-delete`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ questionids: questionIds })
-  });
-  return await handleAPIResponse(response);
-}
 };
 
-
-
-// Enhanced normalize question from API format with proper user handling
+// Normalization helper for question objects
 export function normalizeQuestionFromAPI(apiQuestion) {
   const rawQType = apiQuestion.qtype || apiQuestion.type || 'multichoice';
   const normalizedQType = mapQuestionTypeFromAPI(rawQType);
@@ -392,119 +366,59 @@ export function normalizeQuestionFromAPI(apiQuestion) {
     }
   }
 
-  // Handle tags from API - check multiple possible formats and ONLY use real API tags
+  // Handle tags from API
   const getTagsFromAPI = () => {
     let apiTags = [];
-    
-    // Check different possible tag formats from Moodle API
-    if (apiQuestion.tags && Array.isArray(apiQuestion.tags)) {
-      apiTags = apiQuestion.tags;
-    } else if (apiQuestion.questiontags && Array.isArray(apiQuestion.questiontags)) {
-      apiTags = apiQuestion.questiontags;
-    } else if (apiQuestion.tag_names && Array.isArray(apiQuestion.tag_names)) {
-      apiTags = apiQuestion.tag_names;
-    } else if (apiQuestion.tagnames && Array.isArray(apiQuestion.tagnames)) {
-      apiTags = apiQuestion.tagnames;
-    } else if (typeof apiQuestion.tags === 'string' && apiQuestion.tags.trim()) {
-      // Handle comma-separated tags
+    if (apiQuestion.tags && Array.isArray(apiQuestion.tags)) apiTags = apiQuestion.tags;
+    else if (apiQuestion.questiontags && Array.isArray(apiQuestion.questiontags)) apiTags = apiQuestion.questiontags;
+    else if (apiQuestion.tag_names && Array.isArray(apiQuestion.tag_names)) apiTags = apiQuestion.tag_names;
+    else if (apiQuestion.tagnames && Array.isArray(apiQuestion.tagnames)) apiTags = apiQuestion.tagnames;
+    else if (typeof apiQuestion.tags === 'string' && apiQuestion.tags.trim()) {
       apiTags = apiQuestion.tags.split(',').map(tag => tag.trim()).filter(Boolean);
     }
-    
-    // Normalize tag format - tags might be objects or strings
     return apiTags.map(tag => {
-      if (typeof tag === 'string') {
-        return tag.trim();
-      } else if (tag && typeof tag === 'object') {
-        return tag.name || tag.tag_name || tag.displayname || tag.text || tag.rawname || String(tag.id);
-      }
+      if (typeof tag === 'string') return tag.trim();
+      else if (tag && typeof tag === 'object') return tag.name || tag.tag_name || tag.displayname || tag.text || tag.rawname || String(tag.id);
       return String(tag);
     }).filter(Boolean);
   };
 
-  // Enhanced helper functions with proper Moodle field mapping
+  // Creator/modifier info
   const getCreatorInfo = () => {
-    // Try multiple possible field names from Moodle API
     let creatorName = 'Unknown';
     let creatorDate = '';
-
-    // Check for pre-fetched name first
-    if (apiQuestion.creator_name) {
-      creatorName = apiQuestion.creator_name;
-    } else if (apiQuestion.creator_firstname && apiQuestion.creator_lastname) {
-      creatorName = `${apiQuestion.creator_firstname} ${apiQuestion.creator_lastname}`.trim();
-    } else if (apiQuestion.created_by_name) {
-      creatorName = apiQuestion.created_by_name;
-    } else if (apiQuestion.createdby) {
-      creatorName = `User ${apiQuestion.createdby}`;
-    }
-
-    // Handle creation date
-    if (apiQuestion.timecreated) {
-      creatorDate = new Date(apiQuestion.timecreated * 1000).toLocaleDateString();
-    } else if (apiQuestion.created_at) {
-      creatorDate = new Date(apiQuestion.created_at).toLocaleDateString();
-    } else if (apiQuestion.createddate) {
-      creatorDate = new Date(apiQuestion.createddate).toLocaleDateString();
-    }
-
-    return {
-      name: creatorName,
-      date: creatorDate
-    };
+    if (apiQuestion.creator_name) creatorName = apiQuestion.creator_name;
+    else if (apiQuestion.creator_firstname && apiQuestion.creator_lastname) creatorName = `${apiQuestion.creator_firstname} ${apiQuestion.creator_lastname}`.trim();
+    else if (apiQuestion.created_by_name) creatorName = apiQuestion.created_by_name;
+    else if (apiQuestion.createdby) creatorName = `User ${apiQuestion.createdby}`;
+    if (apiQuestion.timecreated) creatorDate = new Date(apiQuestion.timecreated * 1000).toLocaleDateString();
+    else if (apiQuestion.created_at) creatorDate = new Date(apiQuestion.created_at).toLocaleDateString();
+    else if (apiQuestion.createddate) creatorDate = new Date(apiQuestion.createddate).toLocaleDateString();
+    return { name: creatorName, date: creatorDate };
   };
 
   const getModifierInfo = () => {
-    // Try multiple possible field names from Moodle API
     let modifierName = 'Unknown';
     let modifierDate = '';
-
-    // Check for pre-fetched name first
-    if (apiQuestion.modifier_name) {
-      modifierName = apiQuestion.modifier_name;
-    } else if (apiQuestion.modifier_firstname && apiQuestion.modifier_lastname) {
-      modifierName = `${apiQuestion.modifier_firstname} ${apiQuestion.modifier_lastname}`.trim();
-    } else if (apiQuestion.modified_by_name) {
-      modifierName = apiQuestion.modified_by_name;
-    } else if (apiQuestion.modifiedby) {
-      modifierName = `User ${apiQuestion.modifiedby}`;
-    }
-
-    // Handle modification date
-    if (apiQuestion.timemodified) {
-      modifierDate = new Date(apiQuestion.timemodified * 1000).toLocaleDateString();
-    } else if (apiQuestion.updated_at) {
-      modifierDate = new Date(apiQuestion.updated_at).toLocaleDateString();
-    } else if (apiQuestion.modifieddate) {
-      modifierDate = new Date(apiQuestion.modifieddate).toLocaleDateString();
-    }
-
-    return {
-      name: modifierName,
-      date: modifierDate
-    };
+    if (apiQuestion.modifier_name) modifierName = apiQuestion.modifier_name;
+    else if (apiQuestion.modifier_firstname && apiQuestion.modifier_lastname) modifierName = `${apiQuestion.modifier_firstname} ${apiQuestion.modifier_lastname}`.trim();
+    else if (apiQuestion.modified_by_name) modifierName = apiQuestion.modified_by_name;
+    else if (apiQuestion.modifiedby) modifierName = `User ${apiQuestion.modifiedby}`;
+    if (apiQuestion.timemodified) modifierDate = new Date(apiQuestion.timemodified * 1000).toLocaleDateString();
+    else if (apiQuestion.updated_at) modifierDate = new Date(apiQuestion.updated_at).toLocaleDateString();
+    else if (apiQuestion.modifieddate) modifierDate = new Date(apiQuestion.modifieddate).toLocaleDateString();
+    return { name: modifierName, date: modifierDate };
   };
 
   const getUsageInfo = () => {
     const usage = apiQuestion.usage || apiQuestion.usage_count || 0;
     let lastUsed = 'Never';
-    
-    if (apiQuestion.last_used) {
-      lastUsed = new Date(apiQuestion.last_used).toLocaleDateString();
-    } else if (apiQuestion.timemodified && usage > 0) {
-      lastUsed = new Date(apiQuestion.timemodified * 1000).toLocaleDateString();
-    } else if (apiQuestion.updated_at && usage > 0) {
-      lastUsed = new Date(apiQuestion.updated_at).toLocaleDateString();
-    }
-    
+    if (apiQuestion.last_used) lastUsed = new Date(apiQuestion.last_used).toLocaleDateString();
+    else if (apiQuestion.timemodified && usage > 0) lastUsed = new Date(apiQuestion.timemodified * 1000).toLocaleDateString();
+    else if (apiQuestion.updated_at && usage > 0) lastUsed = new Date(apiQuestion.updated_at).toLocaleDateString();
     return { usage: parseInt(usage) || 0, lastUsed };
   };
 
-
-
-
-  
-
-  // Assign before return!
   const createdBy = getCreatorInfo();
   const modifiedBy = getModifierInfo();
   const usageInfo = getUsageInfo();
@@ -517,7 +431,6 @@ export function normalizeQuestionFromAPI(apiQuestion) {
     qtype: normalizedQType,
     status: apiQuestion.status || 'draft',
     version: `v${apiQuestion.version || 1}`,
-    // ONLY use real API tags - no fallback to demo tags
     tags: apiTags,
     choices: choices,
     options: choices.map(c => c.text || c.answer || ''),
@@ -538,23 +451,19 @@ export function normalizeQuestionFromAPI(apiQuestion) {
     comments: apiQuestion.comments || apiQuestion.comment_count || 0,
     usage: usageInfo.usage,
     lastUsed: usageInfo.lastUsed,
-    history: apiQuestion.history || []
+        history: Array.isArray(apiQuestion.history) ? apiQuestion.history : []
   };
 }
 
-// Generate demo tags for questions without tags (only use when no real tags exist)
+// Demo tags generator (for fallback/demo only)
 export function generateDemoTags(question) {
   const tags = [];
-  
-  // Don't add qtype as a tag anymore since it's not a real tag
   if (question.status && question.status !== 'draft') tags.push(question.status);
-  
   const questionText = (question.questiontext || question.questionText || question.title || '').toLowerCase();
   if (questionText.includes('google')) tags.push('google');
   if (questionText.includes('programming') || questionText.includes('code')) tags.push('programming');
   if (questionText.includes('computer')) tags.push('computer-science');
   if (questionText.includes('math') || questionText.includes('calculate') || questionText.includes('number')) tags.push('mathematics');
-  
   if (question.defaultMark) {
     const mark = parseFloat(question.defaultMark);
     if (mark <= 1) tags.push('easy');
@@ -564,11 +473,8 @@ export function generateDemoTags(question) {
     const difficulties = ['easy', 'medium', 'hard'];
     tags.push(difficulties[Math.floor(Math.random() * difficulties.length)]);
   }
-  
   const academicTags = ['quiz', 'exam', 'practice', 'homework', 'review', 'assessment'];
   if (Math.random() > 0.5) tags.push(academicTags[Math.floor(Math.random() * academicTags.length)]);
-  
-  // Add content-based tags instead of qtype
   switch (question.qtype) {
     case 'multichoice': tags.push('multiple-choice'); break;
     case 'truefalse': tags.push('true-false'); break;
@@ -578,7 +484,6 @@ export function generateDemoTags(question) {
     case 'matching': tags.push('matching'); break;
     case 'gapselect': tags.push('fill-in-blanks'); break;
   }
-  
   if (tags.length < 3) tags.push(...['general', 'standard', 'basic'].slice(0, 3 - tags.length));
   return [...new Set(tags.filter(tag => tag && tag.length > 0))];
 }

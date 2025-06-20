@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  faEdit, faTrash, faCopy, faDownload, faChevronDown, faUsers, faEye, faChartBar, faExclamationTriangle, faCheckCircle, faBug
+  faEdit, faTrash, faCopy, faDownload, faChevronDown, faUsers, faEye, faChartBar, faExclamationTriangle, faCheckCircle, faBug,faTag, faPlusCircle, faMinusCircle 
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
@@ -28,17 +28,103 @@ const BulkActionsRow = ({
   setSelectedQuestions,
   setShowBulkEditModal,
   onBulkDelete,
-  onBulkStatusChange
+  onBulkStatusChange,
+   uestions,           
+  setQuestions, 
+  onBulkTagAction
 }) => {
+
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const statusDropdownRef = useRef(null);
   const moreActionsRef = useRef(null);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [tagAction, setTagAction] = useState('add');
+  const [selectedTag, setSelectedTag] = useState('');
+  const tagDropdownRef = useRef(null);
+   // Tag state
+  const [allTags, setAllTags] = useState([]);
+  const [removableTags, setRemovableTags] = useState([]);
+  const [loadingTags, setLoadingTags] = useState(false);
+
+
+    // Fetch all tags for "Add Tag"
+  useEffect(() => {
+    if (tagAction === 'add' && showTagDropdown) {
+      setLoadingTags(true);
+      fetch('http://127.0.0.1:8000/api/questions/tags', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          console.log('Fetched tags:', data);
+          // Handle all possible response shapes
+          if (Array.isArray(data)) {
+            setAllTags(data);
+          } else if (Array.isArray(data.tags)) {
+            setAllTags(data.tags);
+          } else if (Array.isArray(data.data)) {
+            setAllTags(data.data);
+          } else {
+            setAllTags([]);
+          }
+          setLoadingTags(false);
+        })
+        .catch(() => {
+          setAllTags([]);
+          setLoadingTags(false);
+        });
+    }
+  }, [tagAction, showTagDropdown]);
+
+    // Fetch intersection of tags for "Remove Tag"
+  useEffect(() => {
+    const fetchTagsForQuestions = async () => {
+      if (tagAction === 'remove' && showTagDropdown && selectedQuestions.length > 0) {
+        setLoadingTags(true);
+        try {
+          // Fetch tags for each selected question
+          const tagLists = await Promise.all(
+            selectedQuestions.map(qid =>
+              fetch(`http://127.0.0.1:8000/api/questions/question-tags?questionid=${qid}`, {
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                  'Accept': 'application/json'
+                }
+              })
+                .then(res => res.json())
+                .then(data => (data.tags || []))
+            )
+          );
+          // Find intersection of tag ids
+          let intersection = tagLists[0] || [];
+          for (let i = 1; i < tagLists.length; i++) {
+            intersection = intersection.filter(tag =>
+              tagLists[i].some(t => t.id === tag.id)
+            );
+          }
+          setRemovableTags(intersection);
+        } catch {
+          setRemovableTags([]);
+        }
+        setLoadingTags(false);
+      }
+    };
+    fetchTagsForQuestions();
+  }, [tagAction, showTagDropdown, selectedQuestions]);
+
 
   useEffect(() => {
+
     const handleClickOutside = (event) => {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
         setShowStatusDropdown(false);
+      }
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target)) {
+        setShowTagDropdown(false);
       }
       if (moreActionsRef.current && !moreActionsRef.current.contains(event.target)) {
         setShowMoreActions(false);
@@ -46,6 +132,7 @@ const BulkActionsRow = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+   
   }, []);
 
   const handleStatusChange = async (newStatus) => {
@@ -60,6 +147,53 @@ const BulkActionsRow = ({
     }
     setShowStatusDropdown(false);
   };
+        const handleBulkTag = async () => {
+        if (!selectedTag) return;
+        if (!selectedQuestions.length) return;
+        const token = localStorage.getItem('token');
+        const url = 'http://127.0.0.1:8000/api/questions/bulk-tags';
+        const method = tagAction === 'add' ? 'POST' : 'DELETE';
+        const body = JSON.stringify({
+          questionids: selectedQuestions,
+          tagids: [selectedTag]
+        });
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`${tagAction === 'add' ? 'Added' : 'Removed'} tag successfully!`);
+          // Update local questions state for instant UI feedback
+          setQuestions(prevQuestions =>
+            prevQuestions.map(q => {
+              if (!selectedQuestions.includes(q.id)) return q;
+              let newTags = Array.isArray(q.tags) ? [...q.tags] : [];
+              if (tagAction === 'add') {
+                // Only add if not already present
+                if (!newTags.some(t => t.id === Number(selectedTag))) {
+                  const tagObj = allTags.find(t => t.id === Number(selectedTag));
+                  if (tagObj) newTags.push(tagObj);
+                }
+              } else {
+                // Remove tag
+                newTags = newTags.filter(t => t.id !== Number(selectedTag));
+              }
+              return { ...q, tags: newTags };
+            })
+          );
+          setShowTagDropdown(false);
+          setSelectedTag('');
+          setSelectedQuestions([]); // Optionally clear selection
+        } else {
+          alert('Some tags could not be processed.');
+        }
+      };
 
   if (selectedQuestions.length === 0) return null;
 
@@ -94,6 +228,56 @@ const BulkActionsRow = ({
             <FontAwesomeIcon icon={faEdit} />
             Bulk Edit
           </button>
+          {/* Tag Bulk Actions Dropdown */}
+      <div className="relative" ref={tagDropdownRef}>
+        <button
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-400 transition"
+          onClick={() => setShowTagDropdown(!showTagDropdown)}
+          disabled={selectedQuestions.length === 0}
+        >
+          <FontAwesomeIcon icon={faTag} />
+          Tag Actions
+          <FontAwesomeIcon icon={faChevronDown} className={`ml-1 transition-transform ${showTagDropdown ? 'rotate-180' : ''}`} />
+        </button>
+        {showTagDropdown && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow z-50 min-w-[200px] p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${tagAction === 'add' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setTagAction('add')}
+              >
+                <FontAwesomeIcon icon={faPlusCircle} /> Add Tag
+              </button>
+              <button
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${tagAction === 'remove' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setTagAction('remove')}
+              >
+                <FontAwesomeIcon icon={faMinusCircle} /> Remove Tag
+              </button>
+            </div>
+              <select
+              className="w-full border rounded px-2 py-1 text-sm mb-2"
+              value={selectedTag}
+              onChange={e => setSelectedTag(e.target.value)}
+            >
+              <option value="">Select tag...</option>
+              {(tagAction === 'add' ? allTags : removableTags).map(tag => (
+                <option key={tag.id} value={tag.id}>{tag.name}</option>
+              ))}
+            </select>
+            <button
+              className={`w-full py-1 rounded text-white font-semibold ${tagAction === 'add' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}
+              onClick={handleBulkTag}
+              disabled={!selectedTag}
+            >
+              {tagAction === 'add' ? 'Add Tag' : 'Remove Tag'}
+            </button>
+          </div>
+        )}
+      </div>
+
+
+
 
           {/* Status Dropdown */}
           <div className="relative" ref={statusDropdownRef}>
@@ -181,7 +365,7 @@ const BulkActionsRow = ({
       </div>
 
       {/* Quick Status Actions */}
-      <div className="px-4 py-2 bg-white border-t border-gray-100">
+      {/* <div className="px-4 py-2 bg-white border-t border-gray-100">
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-600">Quick actions:</span>
           <div className="flex gap-1">
@@ -204,7 +388,7 @@ const BulkActionsRow = ({
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
